@@ -1,0 +1,998 @@
+<div class="page-header">
+  <h1>Dotaznik: {{ dealInfo() }}</h1>
+  <span class="step-counter">Krok {{ currentStep() + 1 }} z {{ totalSteps() }}</span>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-bar">
+  @for (step of visibleSteps(); track step.id; let i = $index) {
+    <div class="progress-step" [class.active]="i === currentStep()" [class.done]="i < currentStep()"
+         (click)="goToStep(i)">
+      <span class="step-num">{{ i + 1 }}</span>
+      <span class="step-label">{{ step.label }}</span>
+    </div>
+  }
+</div>
+
+<div class="card wizard-card">
+  <!-- STEP: AI Import -->
+  @if (activeStepId() === 'ai') {
+    <h2>AI Import (volitelny)</h2>
+    <p>Vlozte text nebo popis projektu a AI predvyplni formular.</p>
+    <div class="form-group">
+      <label>Text k analyze</label>
+      <textarea rows="8" [ngModel]="aiText()" (ngModelChange)="aiText.set($event)" name="ai_text"
+                placeholder="Vlozte email, poznamky ze schuzky, brief od klienta..."></textarea>
+    </div>
+    <button class="btn btn-primary" (click)="aiExtract()" [disabled]="aiLoading()">
+      {{ aiLoading() ? 'Analyzuji...' : 'Vyplnit pomoci AI' }}
+    </button>
+    @if (aiHighlighted().size > 0) {
+      <p class="ai-result">AI vyplnila {{ aiHighlighted().size }} poli. Pokracujte dal a zkontrolujte.</p>
+    }
+  }
+
+  <!-- STEP A: Client & context -->
+  @if (activeStepId() === 'a') {
+    <h2>A — Klient & kontext</h2>
+    <div class="grid grid-2">
+      <div class="form-group" [class.ai-filled]="isAiField('a_company_name')">
+        <label>Nazev firmy</label>
+        <input type="text" [(ngModel)]="form.a_company_name" name="a_company_name">
+      </div>
+      <div class="form-group" [class.ai-filled]="isAiField('a_ico')">
+        <label>ICO</label>
+        <input type="text" [(ngModel)]="form.a_ico" name="a_ico">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group" [class.ai-filled]="isAiField('a_contact_person')">
+        <label>Kontaktni osoba</label>
+        <input type="text" [(ngModel)]="form.a_contact_person" name="a_contact_person">
+      </div>
+      <div class="form-group" [class.ai-filled]="isAiField('a_email')">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="form.a_email" name="a_email">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group" [class.ai-filled]="isAiField('a_phone')">
+        <label>Telefon</label>
+        <input type="text" [(ngModel)]="form.a_phone" name="a_phone">
+      </div>
+      <div class="form-group">
+        <label>Odvetvi</label>
+        <select [(ngModel)]="form.a_industry" name="a_industry">
+          <option value="">-- Vyberte --</option>
+          <option value="it">IT / Software</option>
+          <option value="eshop">E-commerce</option>
+          <option value="manufacturing">Vyroba / Prumysl</option>
+          <option value="finance">Finance</option>
+          <option value="healthcare">Zdravotnictvi</option>
+          <option value="education">Vzdelavani</option>
+          <option value="realestate">Reality / Stavebnictvi</option>
+          <option value="logistics">Logistika / Doprava</option>
+          <option value="gastro">Gastronomie</option>
+          <option value="services">Sluzby / Poradenstvi</option>
+          <option value="nonprofit">Neziskovy sektor</option>
+          <option value="government">Statni sprava</option>
+          <option value="other">Jine</option>
+        </select>
+      </div>
+    </div>
+    @if (form.a_industry === 'other') {
+      <div class="form-group">
+        <label>Jine odvetvi</label>
+        <input type="text" [(ngModel)]="form.a_industry_other" name="a_industry_other">
+      </div>
+    }
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Pocet zamestnancu</label>
+        <select [(ngModel)]="form.a_employee_count" name="a_employee_count">
+          <option value="">-- Vyberte --</option>
+          <option value="solo">Jednotlivec</option>
+          <option value="micro">2-10</option>
+          <option value="small">11-50</option>
+          <option value="medium">51-250</option>
+          <option value="large">250+</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rocni obrat</label>
+        <select [(ngModel)]="form.a_annual_revenue" name="a_annual_revenue">
+          <option value="">-- Vyberte --</option>
+          <option value="under_1m">Pod 1 mil.</option>
+          <option value="1_10m">1-10 mil.</option>
+          <option value="10_50m">10-50 mil.</option>
+          <option value="50_200m">50-200 mil.</option>
+          <option value="over_200m">Nad 200 mil.</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Soucasne IT reseni (vice moznosti)</label>
+      <div class="checkbox-grid">
+        @for (opt of [['website','Web'],['eshop','E-shop'],['crm','CRM'],['erp','ERP'],
+          ['accounting','Ucetnictvi'],['project_mgmt','PM nastroj'],['custom_app','Vlastni app'],
+          ['ai_tools','AI nastroje'],['none','Zadne']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.a_current_it, opt[0])"
+                   (change)="toggleMulti(form.a_current_it, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Spokojenost s IT</label>
+      <select [(ngModel)]="form.a_it_satisfaction" name="a_it_satisfaction">
+        <option value="">-- Vyberte --</option>
+        <option value="satisfied">Spokojeni</option>
+        <option value="partial">Castecne</option>
+        <option value="dissatisfied">Nespokojeni</option>
+        <option value="no_it">Nemame IT</option>
+      </select>
+    </div>
+  }
+
+  <!-- STEP B: Project type -->
+  @if (activeStepId() === 'b') {
+    <h2>B — Typ projektu</h2>
+    <div class="form-group">
+      <label>Hlavni kategorie (vice moznosti)</label>
+      <div class="checkbox-grid">
+        @for (opt of [['custom_dev','Vyvoj na miru'],['website_eshop','Web & e-shop'],
+          ['ai_automation','AI & automatizace'],['enterprise_system','Podnikovy system'],
+          ['integration','Integrace'],['security','Bezpecnost'],['data_analytics','Data & analytika'],
+          ['support','Podpora'],['training','Skoleni'],['mobile_app','Mobilni app'],
+          ['cloud_migration','Cloud migrace'],['iot','IoT'],['blockchain','Blockchain'],
+          ['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.b_main_categories, opt[0])"
+                   (change)="toggleMulti(form.b_main_categories, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Primarni cil</label>
+      <select [(ngModel)]="form.b_primary_goal" name="b_primary_goal">
+        <option value="">-- Vyberte --</option>
+        <option value="new_product">Novy produkt</option>
+        <option value="digitize">Digitalizace</option>
+        <option value="replace">Nahrada systemu</option>
+        <option value="optimize">Optimalizace</option>
+        <option value="automate">Automatizace</option>
+        <option value="data">Prace s daty</option>
+        <option value="security">Bezpecnost</option>
+        <option value="other">Jine</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Cilovi uzivatele</label>
+      <div class="checkbox-grid">
+        @for (opt of [['employees','Zamestnanci'],['management','Management'],['clients','Klienti'],
+          ['partners','Partneri'],['public','Verejnost']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.b_target_users, opt[0])"
+                   (change)="toggleMulti(form.b_target_users, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Odhadovany pocet uzivatelu</label>
+      <select [(ngModel)]="form.b_estimated_users" name="b_estimated_users">
+        <option value="">-- Vyberte --</option>
+        <option value="1_5">1-5</option>
+        <option value="6_20">6-20</option>
+        <option value="21_50">21-50</option>
+        <option value="51_200">51-200</option>
+        <option value="201_1000">201-1000</option>
+        <option value="1001_plus">1000+</option>
+        <option value="public">Verejnost</option>
+      </select>
+    </div>
+  }
+
+  <!-- STEP C: Custom development -->
+  @if (activeStepId() === 'c') {
+    <h2>C — Vyvoj na miru</h2>
+    <div class="form-group">
+      <label>Platforma</label>
+      <div class="checkbox-grid">
+        @for (opt of [['web','Web'],['mobile_ios','iOS'],['mobile_android','Android'],
+          ['desktop','Desktop'],['api_only','Jen API']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.c_platform, opt[0])"
+                   (change)="toggleMulti(form.c_platform, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Offline rezim</label>
+        <select [(ngModel)]="form.c_offline_mode" name="c_offline_mode">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+          <option value="partial">Castecne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Platby</label>
+        <select [(ngModel)]="form.c_has_payments" name="c_has_payments">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+    </div>
+    @if (form.c_has_payments === 'yes') {
+      <div class="form-group">
+        <label>Platebni brana</label>
+        <div class="checkbox-grid">
+          @for (opt of [['stripe','Stripe'],['gopay','GoPay'],['comgate','Comgate'],
+            ['paypal','PayPal'],['bank_transfer','Banka']]; track opt[0]) {
+            <label class="checkbox-label">
+              <input type="checkbox" [checked]="isChecked(form.c_payment_gateway, opt[0])"
+                     (change)="toggleMulti(form.c_payment_gateway, opt[0])"> {{ opt[1] }}
+            </label>
+          }
+        </div>
+      </div>
+    }
+    <div class="form-group">
+      <label>Uzivatelske role</label>
+      <div class="checkbox-grid">
+        @for (opt of [['admin','Admin'],['manager','Manager'],['user','Uzivatel'],
+          ['guest','Host'],['api_client','API klient']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.c_user_roles, opt[0])"
+                   (change)="toggleMulti(form.c_user_roles, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Autentizace</label>
+      <div class="checkbox-grid">
+        @for (opt of [['email_password','Email+heslo'],['social_login','Social login'],
+          ['sso','SSO'],['2fa','2FA'],['api_key','API klic']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.c_auth_methods, opt[0])"
+                   (change)="toggleMulti(form.c_auth_methods, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Vicejazycnost</label>
+        <select [(ngModel)]="form.c_multilingual" name="c_multilingual">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Design</label>
+        <select [(ngModel)]="form.c_has_design" name="c_has_design">
+          <option value="">-- Vyberte --</option>
+          <option value="yes_figma">Ano, Figma</option>
+          <option value="yes_other">Ano, jiny format</option>
+          <option value="no_need">Ne, potrebujeme navrhnout</option>
+          <option value="no_dont_need">Ne, nepotrebujeme</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Klicove funkce (popis)</label>
+      <textarea [(ngModel)]="form.c_key_features" name="c_key_features" rows="3"></textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Existujici codebase</label>
+        <select [(ngModel)]="form.c_existing_codebase" name="c_existing_codebase">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Pristup k repozitari</label>
+        <select [(ngModel)]="form.c_repo_access" name="c_repo_access">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+    </div>
+  }
+
+  <!-- STEP D: Web & e-shop -->
+  @if (activeStepId() === 'd') {
+    <h2>D — Web & e-shop</h2>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Typ webu</label>
+        <select [(ngModel)]="form.d_website_type" name="d_website_type">
+          <option value="">-- Vyberte --</option>
+          <option value="presentation">Prezentacni</option>
+          <option value="eshop">E-shop</option>
+          <option value="catalog">Katalog</option>
+          <option value="portal">Portal</option>
+          <option value="landing">Landing page</option>
+          <option value="blog">Blog</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Pocet produktu</label>
+        <select [(ngModel)]="form.d_product_count" name="d_product_count">
+          <option value="">-- Vyberte --</option>
+          <option value="under_50">Pod 50</option>
+          <option value="50_500">50-500</option>
+          <option value="500_5000">500-5000</option>
+          <option value="over_5000">Nad 5000</option>
+          <option value="na">Neaplikovano</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Napojeni na ERP</label>
+        <select [(ngModel)]="form.d_erp_connection" name="d_erp_connection">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SEO</label>
+        <select [(ngModel)]="form.d_seo_requirements" name="d_seo_requirements">
+          <option value="">-- Vyberte --</option>
+          <option value="basic">Zakladni</option>
+          <option value="advanced">Pokrocile</option>
+          <option value="none">Nepotrebujeme</option>
+        </select>
+      </div>
+    </div>
+    @if (form.d_erp_connection === 'yes') {
+      <div class="form-group">
+        <label>ERP system (detaily)</label>
+        <input type="text" [(ngModel)]="form.d_erp_system" name="d_erp_system">
+      </div>
+    }
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Ma domenu</label>
+        <select [(ngModel)]="form.d_has_domain" name="d_has_domain">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ma hosting</label>
+        <select [(ngModel)]="form.d_has_hosting" name="d_has_hosting">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Sprava obsahu</label>
+        <select [(ngModel)]="form.d_content_management" name="d_content_management">
+          <option value="">-- Vyberte --</option>
+          <option value="we_manage">Sami</option>
+          <option value="you_manage">Vy</option>
+          <option value="both">Kombinace</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CMS</label>
+        <select [(ngModel)]="form.d_preferred_cms" name="d_preferred_cms">
+          <option value="">-- Vyberte --</option>
+          <option value="wordpress">WordPress</option>
+          <option value="shopify">Shopify</option>
+          <option value="custom">Na miru</option>
+          <option value="no_preference">Bez preference</option>
+          <option value="other">Jine</option>
+        </select>
+      </div>
+    </div>
+  }
+
+  <!-- STEP E: AI & automation -->
+  @if (activeStepId() === 'e') {
+    <h2>E — AI & automatizace</h2>
+    <div class="form-group">
+      <label>Typ AI reseni</label>
+      <div class="checkbox-grid">
+        @for (opt of [['chatbot','Chatbot'],['data_analysis','Analyza dat'],
+          ['document_processing','Zpracovani dokumentu'],['recommendation','Doporuceni'],
+          ['prediction','Predikce'],['automation','Automatizace'],
+          ['image_recognition','Rozpoznavani obrazu'],['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.e_ai_solution_type, opt[0])"
+                   (change)="toggleMulti(form.e_ai_solution_type, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Zdroje dat</label>
+      <div class="checkbox-grid">
+        @for (opt of [['database','Databaze'],['api','API'],['files','Soubory'],
+          ['emails','Emaily'],['web_scraping','Web scraping'],['iot','IoT'],
+          ['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.e_data_sources, opt[0])"
+                   (change)="toggleMulti(form.e_data_sources, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Objem dat</label>
+        <select [(ngModel)]="form.e_data_volume" name="e_data_volume">
+          <option value="">-- Vyberte --</option>
+          <option value="small">Maly (MB)</option>
+          <option value="medium">Stredni (GB)</option>
+          <option value="large">Velky (TB+)</option>
+          <option value="unknown">Nevim</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Lokalni AI</label>
+        <select [(ngModel)]="form.e_local_ai_requirement" name="e_local_ai_requirement">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>GDPR citlivost</label>
+        <select [(ngModel)]="form.e_gdpr_sensitivity" name="e_gdpr_sensitivity">
+          <option value="">-- Vyberte --</option>
+          <option value="low">Nizka</option>
+          <option value="medium">Stredni</option>
+          <option value="high">Vysoka (GDPR)</option>
+          <option value="very_high">Velmi vysoka</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Existujici automatizace</label>
+        <select [(ngModel)]="form.e_existing_automation" name="e_existing_automation">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Jazyky AI</label>
+      <div class="checkbox-grid">
+        @for (opt of [['cs','Cestina'],['en','Anglictina'],['de','Nemcina'],
+          ['sk','Slovenstina'],['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.e_ai_language, opt[0])"
+                   (change)="toggleMulti(form.e_ai_language, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- STEP F: Enterprise system -->
+  @if (activeStepId() === 'f') {
+    <h2>F — Podnikovy system</h2>
+    <div class="form-group">
+      <label>Typ systemu</label>
+      <div class="checkbox-grid">
+        @for (opt of [['crm','CRM'],['erp','ERP'],['hrm','HRM'],['dms','DMS'],
+          ['project_mgmt','PM'],['accounting','Ucetnictvi'],['warehouse','Sklad'],
+          ['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.f_system_type, opt[0])"
+                   (change)="toggleMulti(form.f_system_type, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Soucasny system (detaily)</label>
+      <textarea [(ngModel)]="form.f_current_system" name="f_current_system" rows="2"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Duvody nespokojenosti</label>
+      <div class="checkbox-grid">
+        @for (opt of [['slow','Pomaly'],['expensive','Drahy'],['missing_features','Chybi funkce'],
+          ['no_integration','Neintegruje se'],['outdated','Zastaraly'],['no_support','Bez podpory'],
+          ['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.f_dissatisfaction_reasons, opt[0])"
+                   (change)="toggleMulti(form.f_dissatisfaction_reasons, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Na miru vs hotove</label>
+        <select [(ngModel)]="form.f_custom_vs_ready" name="f_custom_vs_ready">
+          <option value="">-- Vyberte --</option>
+          <option value="custom">Na miru</option>
+          <option value="ready">Hotove reseni</option>
+          <option value="hybrid">Kombinace</option>
+          <option value="unknown">Nevim</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Soucasnych uzivatelu</label>
+        <select [(ngModel)]="form.f_concurrent_users" name="f_concurrent_users">
+          <option value="">-- Vyberte --</option>
+          <option value="1_10">1-10</option>
+          <option value="11_50">11-50</option>
+          <option value="51_200">51-200</option>
+          <option value="200_plus">200+</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Migrace dat</label>
+      <select [(ngModel)]="form.f_data_migration" name="f_data_migration">
+        <option value="">-- Vyberte --</option>
+        <option value="yes">Ano</option>
+        <option value="partial">Castecne</option>
+        <option value="no">Ne, zaciname na zelene louce</option>
+      </select>
+    </div>
+  }
+
+  <!-- STEP G: Integration -->
+  @if (activeStepId() === 'g') {
+    <h2>G — Integrace</h2>
+    <div class="form-group">
+      <label>Systemy k propojeni</label>
+      <div class="checkbox-grid">
+        @for (opt of [['erp','ERP'],['crm','CRM'],['accounting','Ucetnictvi'],['eshop','E-shop'],
+          ['email','Email'],['calendar','Kalendar'],['storage','Uloziste'],
+          ['custom_api','Vlastni API'],['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.g_systems_to_connect, opt[0])"
+                   (change)="toggleMulti(form.g_systems_to_connect, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Detaily integrace</label>
+      <textarea [(ngModel)]="form.g_systems_details" name="g_systems_details" rows="2"></textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Smer integrace</label>
+        <select [(ngModel)]="form.g_integration_direction" name="g_integration_direction">
+          <option value="">-- Vyberte --</option>
+          <option value="one_way">Jednosmerna</option>
+          <option value="two_way">Obousmerna</option>
+          <option value="both">Oboji</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Frekvence synchronizace</label>
+        <select [(ngModel)]="form.g_sync_frequency" name="g_sync_frequency">
+          <option value="">-- Vyberte --</option>
+          <option value="realtime">Real-time</option>
+          <option value="hourly">Kazdou hodinu</option>
+          <option value="daily">Denne</option>
+          <option value="on_demand">Na vyzadani</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Ma API dokumentaci</label>
+      <select [(ngModel)]="form.g_has_api_docs" name="g_has_api_docs">
+        <option value="">-- Vyberte --</option>
+        <option value="yes">Ano</option><option value="no">Ne</option>
+      </select>
+    </div>
+  }
+
+  <!-- STEP H: Security -->
+  @if (activeStepId() === 'h') {
+    <h2>H — Bezpecnost</h2>
+    <div class="form-group">
+      <label>Typ sluzby</label>
+      <div class="checkbox-grid">
+        @for (opt of [['audit','Audit'],['pentest','Pentest'],['monitoring','Monitoring'],
+          ['incident_response','Incident response'],['compliance','Compliance'],
+          ['training','Skoleni']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.h_security_service_type, opt[0])"
+                   (change)="toggleMulti(form.h_security_service_type, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Mel incident</label>
+      <select [(ngModel)]="form.h_had_incident" name="h_had_incident">
+        <option value="">-- Vyberte --</option>
+        <option value="yes">Ano</option><option value="no">Ne</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Regulatorni pozadavky</label>
+      <div class="checkbox-grid">
+        @for (opt of [['gdpr','GDPR'],['iso27001','ISO 27001'],['pci_dss','PCI DSS'],
+          ['hipaa','HIPAA'],['sox','SOX'],['none','Zadne']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.h_regulatory_requirements, opt[0])"
+                   (change)="toggleMulti(form.h_regulatory_requirements, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- STEP I: Data & analytics -->
+  @if (activeStepId() === 'i') {
+    <h2>I — Data & analytika</h2>
+    <div class="form-group">
+      <label>Datove potreby</label>
+      <div class="checkbox-grid">
+        @for (opt of [['dashboards','Dashboardy'],['reports','Reporty'],['etl','ETL'],
+          ['data_warehouse','Data warehouse'],['visualization','Vizualizace'],
+          ['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.i_data_needs, opt[0])"
+                   (change)="toggleMulti(form.i_data_needs, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Zdroje dat</label>
+      <div class="checkbox-grid">
+        @for (opt of [['database','Databaze'],['spreadsheets','Tabulky'],['api','API'],
+          ['files','Soubory'],['web_analytics','Web analytika'],['other','Jine']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.i_data_sources, opt[0])"
+                   (change)="toggleMulti(form.i_data_sources, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Existujici BI nastroj</label>
+      <select [(ngModel)]="form.i_existing_bi_tool" name="i_existing_bi_tool">
+        <option value="">-- Vyberte --</option>
+        <option value="yes">Ano</option><option value="no">Ne</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Kdo bude reporty pouzivat</label>
+      <div class="checkbox-grid">
+        @for (opt of [['management','Management'],['analysts','Analysti'],
+          ['all_employees','Vsichni'],['clients','Klienti']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.i_report_users, opt[0])"
+                   (change)="toggleMulti(form.i_report_users, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- STEP J: Support & training -->
+  @if (activeStepId() === 'j') {
+    <h2>J — Podpora & skoleni</h2>
+    <div class="form-group">
+      <label>Typ podpory</label>
+      <div class="checkbox-grid">
+        @for (opt of [['helpdesk','Helpdesk'],['monitoring','Monitoring'],
+          ['maintenance','Udrzba'],['on_call','On-call'],['consulting','Konzultace']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.j_support_type, opt[0])"
+                   (change)="toggleMulti(form.j_support_type, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>SLA</label>
+      <select [(ngModel)]="form.j_required_sla" name="j_required_sla">
+        <option value="">-- Vyberte --</option>
+        <option value="basic">Zakladni (NBD)</option>
+        <option value="standard">Standardni (8h)</option>
+        <option value="premium">Premium (4h)</option>
+        <option value="critical">Kriticky (1h)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Typ skoleni</label>
+      <div class="checkbox-grid">
+        @for (opt of [['user_training','Uzivatelske'],['admin_training','Admin'],
+          ['technical_training','Technicke'],['documentation','Dokumentace']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.j_training_type, opt[0])"
+                   (change)="toggleMulti(form.j_training_type, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Pocet skolenych</label>
+        <select [(ngModel)]="form.j_training_count" name="j_training_count">
+          <option value="">-- Vyberte --</option>
+          <option value="under_10">Pod 10</option>
+          <option value="10_50">10-50</option>
+          <option value="50_200">50-200</option>
+          <option value="over_200">200+</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Format</label>
+        <select [(ngModel)]="form.j_training_format" name="j_training_format">
+          <option value="">-- Vyberte --</option>
+          <option value="onsite">Prezencne</option>
+          <option value="online">Online</option>
+          <option value="hybrid">Kombinace</option>
+          <option value="self_paced">E-learning</option>
+        </select>
+      </div>
+    </div>
+  }
+
+  <!-- STEP K: Budget & timeline -->
+  @if (activeStepId() === 'k') {
+    <h2>K — Rozpocet, cas & priorita</h2>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Rozpocet</label>
+        <select [(ngModel)]="form.k_budget_range" name="k_budget_range">
+          <option value="">-- Vyberte --</option>
+          <option value="under_50k">Pod 50 000 Kc</option>
+          <option value="50_100k">50-100 000 Kc</option>
+          <option value="100_250k">100-250 000 Kc</option>
+          <option value="250_500k">250-500 000 Kc</option>
+          <option value="500k_1m">500 000-1 mil. Kc</option>
+          <option value="1m_3m">1-3 mil. Kc</option>
+          <option value="over_3m">Nad 3 mil. Kc</option>
+          <option value="unknown">Nevim</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cenovy model</label>
+        <select [(ngModel)]="form.k_pricing_model" name="k_pricing_model">
+          <option value="">-- Vyberte --</option>
+          <option value="fixed">Pevna cena</option>
+          <option value="time_material">Time & Material</option>
+          <option value="retainer">Retainer</option>
+          <option value="milestone">Milestone</option>
+          <option value="no_preference">Bez preference</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Termin spusteni</label>
+        <select [(ngModel)]="form.k_launch_deadline" name="k_launch_deadline">
+          <option value="">-- Vyberte --</option>
+          <option value="asap">ASAP</option>
+          <option value="1month">Do 1 mesice</option>
+          <option value="3months">Do 3 mesicu</option>
+          <option value="6months">Do 6 mesicu</option>
+          <option value="year">Do roku</option>
+          <option value="flexible">Flexibilni</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Konkretni deadline</label>
+        <input type="date" [(ngModel)]="form.k_specific_deadline" name="k_specific_deadline">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Preferuje MVP</label>
+        <select [(ngModel)]="form.k_prefers_mvp" name="k_prefers_mvp">
+          <option value="">-- Vyberte --</option>
+          <option value="mvp">Ano, MVP nejdriv</option>
+          <option value="full">Ne, kompletni</option>
+          <option value="unknown">Nevim, poradte</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priorita</label>
+        <select [(ngModel)]="form.k_priority" name="k_priority">
+          <option value="">-- Vyberte --</option>
+          <option value="speed">Rychlost</option>
+          <option value="quality">Kvalita</option>
+          <option value="price">Nizka cena</option>
+          <option value="innovation">Inovativnost</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Rozhodovatel</label>
+        <select [(ngModel)]="form.k_decision_maker" name="k_decision_maker">
+          <option value="">-- Vyberte --</option>
+          <option value="contact">Kontaktni osoba</option>
+          <option value="board">Vedeni</option>
+          <option value="team">Tym</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Horizont rozhodnuti</label>
+        <select [(ngModel)]="form.k_decision_horizon" name="k_decision_horizon">
+          <option value="">-- Vyberte --</option>
+          <option value="immediately">Ihned</option>
+          <option value="weeks">Tydny</option>
+          <option value="months">Mesice</option>
+          <option value="exploring">Zjistujeme</option>
+        </select>
+      </div>
+    </div>
+  }
+
+  <!-- STEP L: Technical preferences -->
+  @if (activeStepId() === 'l') {
+    <h2>L — Technicke preference</h2>
+    <div class="form-group">
+      <label>Ma IT tym</label>
+      <select [(ngModel)]="form.l_has_it_team" name="l_has_it_team">
+        <option value="">-- Vyberte --</option>
+        <option value="yes">Ano</option><option value="no">Ne</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Preferovany stack</label>
+      <div class="checkbox-grid">
+        @for (opt of [['python','Python'],['javascript','JavaScript'],['typescript','TypeScript'],
+          ['java','Java'],['dotnet','.NET'],['php','PHP'],['go','Go'],['rust','Rust'],
+          ['no_preference','Bez preference']]; track opt[0]) {
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="isChecked(form.l_preferred_stack, opt[0])"
+                   (change)="toggleMulti(form.l_preferred_stack, opt[0])"> {{ opt[1] }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Hosting</label>
+        <select [(ngModel)]="form.l_hosting_preference" name="l_hosting_preference">
+          <option value="">-- Vyberte --</option>
+          <option value="cloud_cz">Cloud (ceske DC)</option>
+          <option value="cloud_eu">Cloud (EU)</option>
+          <option value="cloud_global">Cloud (globalni)</option>
+          <option value="on_premise">On-premise</option>
+          <option value="no_preference">Bez preference</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Databaze</label>
+        <select [(ngModel)]="form.l_database_preference" name="l_database_preference">
+          <option value="">-- Vyberte --</option>
+          <option value="postgresql">PostgreSQL</option>
+          <option value="mysql">MySQL</option>
+          <option value="mssql">MS SQL</option>
+          <option value="mongodb">MongoDB</option>
+          <option value="no_preference">Bez preference</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>CI/CD & DevOps</label>
+        <select [(ngModel)]="form.l_cicd_devops" name="l_cicd_devops">
+          <option value="">-- Vyberte --</option>
+          <option value="yes">Ano</option><option value="no">Ne</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Vlastnictvi kodu</label>
+        <select [(ngModel)]="form.l_code_ownership" name="l_code_ownership">
+          <option value="">-- Vyberte --</option>
+          <option value="full">Plne vlastnictvi</option>
+          <option value="license">Licence</option>
+          <option value="no_preference">Bez preference</option>
+        </select>
+      </div>
+    </div>
+  }
+
+  <!-- STEP M: Conclusion -->
+  @if (activeStepId() === 'm') {
+    <h2>M — Zaver hovoru</h2>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Zdroj leadu</label>
+        <select [(ngModel)]="form.m_lead_source" name="m_lead_source">
+          <option value="">-- Vyberte --</option>
+          <option value="referral">Doporuceni</option>
+          <option value="google">Google</option>
+          <option value="social">Socialni site</option>
+          <option value="event">Event</option>
+          <option value="cold">Cold outreach</option>
+          <option value="returning">Vracejici se</option>
+          <option value="other">Jine</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Dalsi krok</label>
+        <select [(ngModel)]="form.m_next_step" name="m_next_step">
+          <option value="">-- Vyberte --</option>
+          <option value="proposal">Zaslat nabidku</option>
+          <option value="meeting">Schuzka</option>
+          <option value="demo">Demo</option>
+          <option value="waiting">Ceka na klienta</option>
+          <option value="declined">Odmitl</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>Dalsi kontakt</label>
+        <input type="date" [(ngModel)]="form.m_next_contact_date" name="m_next_contact_date">
+      </div>
+      <div class="form-group">
+        <label>Hodnoceni leadu</label>
+        <select [(ngModel)]="form.m_lead_rating" name="m_lead_rating">
+          <option value="">-- Vyberte --</option>
+          <option value="hot">Hot</option>
+          <option value="warm">Warm</option>
+          <option value="cool">Cool</option>
+          <option value="cold">Cold</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Poznamky z hovoru</label>
+      <textarea [(ngModel)]="form.m_sales_notes" name="m_sales_notes" rows="4"></textarea>
+    </div>
+  }
+
+  <!-- STEP: Summary -->
+  @if (activeStepId() === 'summary') {
+    <h2>Shrnuti</h2>
+    <div class="summary">
+      <div class="summary-section">
+        <h3>Klient</h3>
+        <p><strong>{{ form.a_company_name }}</strong> (ICO: {{ form.a_ico }})</p>
+        <p>{{ form.a_contact_person }} | {{ form.a_email }} | {{ form.a_phone }}</p>
+      </div>
+      <div class="summary-section">
+        <h3>Projekt</h3>
+        <p>Kategorie: {{ form.b_main_categories.join(', ') || '-' }}</p>
+        <p>Cil: {{ form.b_primary_goal || '-' }} | Uzivatele: {{ form.b_estimated_users || '-' }}</p>
+      </div>
+      <div class="summary-section">
+        <h3>Rozpocet & cas</h3>
+        <p>Budget: {{ form.k_budget_range || '-' }} | Deadline: {{ form.k_launch_deadline || '-' }}</p>
+        <p>Priorita: {{ form.k_priority || '-' }} | MVP: {{ form.k_prefers_mvp || '-' }}</p>
+      </div>
+      <div class="summary-section">
+        <h3>Zaver</h3>
+        <p>Lead: {{ form.m_lead_rating || '-' }} | Dalsi krok: {{ form.m_next_step || '-' }}</p>
+        @if (form.m_sales_notes) {
+          <p>Poznamky: {{ form.m_sales_notes }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Navigation -->
+  <div class="wizard-nav">
+    @if (currentStep() > 0) {
+      <button class="btn btn-secondary" (click)="prev()">Zpet</button>
+    }
+    @if (activeStepId() !== 'summary') {
+      <button class="btn btn-primary" (click)="next()">Dalsi</button>
+    } @else {
+      <button class="btn btn-primary" (click)="submit()" [disabled]="submitting()">
+        {{ submitting() ? 'Odesilam...' : 'Ulozit dotaznik' }}
+      </button>
+    }
+  </div>
+</div>

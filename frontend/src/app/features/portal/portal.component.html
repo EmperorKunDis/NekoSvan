@@ -1,0 +1,130 @@
+@if (error()) {
+  <div class="card" style="text-align: center; padding: 40px">
+    <h2>{{ error() }}</h2>
+  </div>
+} @else if (data(); as d) {
+  <div style="max-width: 800px; margin: 0 auto">
+    <div class="card" style="text-align: center">
+      <h1>{{ asRecord(d['deal'])['client_company'] }}</h1>
+      <p>
+        Status:
+        <span class="badge badge-{{ asRecord(d['deal'])['phase'] }}">{{
+          asRecord(d['deal'])['phase_display']
+        }}</span>
+      </p>
+    </div>
+
+    <!-- Proposal -->
+    @if (d['proposal']) {
+      <div class="card">
+        <h3>Cenova nabidka</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Polozka</th>
+              <th>Hodiny</th>
+              <th>Sazba</th>
+              <th>Celkem</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of asArray(asRecord(d['proposal'])['items']); track $index) {
+              <tr>
+                <td>{{ item['name'] }}</td>
+                <td>{{ item['hours'] }}</td>
+                <td>{{ item['rate'] | currency: 'CZK' : 'symbol' : '1.0-0' }}</td>
+                <td>{{ item['total'] | currency: 'CZK' : 'symbol' : '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div style="margin-top: 16px; font-size: 18px">
+          <strong
+            >Celkem:
+            {{
+              asRecord(d['proposal'])['total_price'] | currency: 'CZK' : 'symbol' : '1.0-0'
+            }}</strong
+          >
+          <br />
+          <small
+            >Zaloha:
+            {{
+              asRecord(d['proposal'])['deposit_amount'] | currency: 'CZK' : 'symbol' : '1.0-0'
+            }}</small
+          >
+        </div>
+
+        @if (asRecord(d['proposal'])['status'] === 'sent') {
+          <div style="margin-top: 16px; display: flex; gap: 8px; align-items: flex-end">
+            <button class="btn btn-success" (click)="acceptProposal()">Souhlasim</button>
+            <div style="flex: 1">
+              <div class="form-group" style="margin-bottom: 0">
+                <input type="text" [(ngModel)]="feedback" placeholder="Pripominky..." />
+              </div>
+            </div>
+            <button class="btn btn-danger" (click)="rejectProposal()" [disabled]="!feedback">
+              Mam pripominky
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Project milestones -->
+    @if (d['project']) {
+      <div class="card">
+        <h3>Prubeh projektu</h3>
+        <div style="background: #eee; border-radius: 8px; height: 8px; margin-bottom: 16px">
+          <div
+            [style.width.%]="asRecord(d['project'])['progress_percent']"
+            style="background: #00b894; height: 100%"
+          ></div>
+        </div>
+        @for (m of asArray(asRecord(d['project'])['milestones']); track m['id']) {
+          <div
+            style="
+              padding: 12px 0;
+              border-bottom: 1px solid #eee;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <div>
+              <strong>{{ m['order'] }}. {{ m['title'] }}</strong>
+              <br /><small class="badge">{{ m['status_display'] }}</small>
+              @if (m['demo_url']) {
+                <a [href]="m['demo_url']" target="_blank" style="margin-left: 8px">Demo</a>
+              }
+            </div>
+            @if (m['status'] === 'client_review') {
+              <div style="display: flex; gap: 4px">
+                <button class="btn btn-success" (click)="approveMilestone(+m['id'])">
+                  Schvaluji
+                </button>
+                <button class="btn btn-danger" (click)="rejectMilestone(+m['id'])">
+                  Pripominky
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Payments -->
+    @if (asArray(d['payments']).length > 0) {
+      <div class="card">
+        <h3>Platby</h3>
+        @for (p of asArray(d['payments']); track p['id']) {
+          <div style="padding: 8px 0; border-bottom: 1px solid #eee">
+            {{ p['type_display'] }}: {{ p['amount'] | currency: 'CZK' : 'symbol' : '1.0-0' }} —
+            <span class="badge">{{ p['status_display'] }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <div class="card" style="text-align: center; padding: 40px"><p>Nacitam...</p></div>
+}

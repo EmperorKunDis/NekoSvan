@@ -1,0 +1,60 @@
+<div class="page-header">
+  <h1>Dealy ({{ totalCount() }})</h1>
+  <a routerLink="/deals/new" class="btn btn-primary">+ Novy lead</a>
+</div>
+
+<div class="card" style="margin-bottom: 16px">
+  <div style="display: flex; gap: 8px; flex-wrap: wrap">
+    @for (phase of phases; track phase.value) {
+      <button
+        class="btn"
+        [class.btn-primary]="filterPhase() === phase.value"
+        [style.font-weight]="phase.value && isMyPhase(phase.value) ? 'bold' : 'normal'"
+        (click)="setPhaseFilter(phase.value)"
+      >
+        {{ phase.label }}
+      </button>
+    }
+  </div>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Firma</th>
+        <th>Kontakt</th>
+        <th>Fáze</th>
+        <th>Status</th>
+        <th>Přiřazen</th>
+        <th>Aktualizováno</th>
+        <th style="width: 80px">Akce</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (deal of deals(); track deal.id) {
+        <tr [style.background]="isMyPhase(deal.phase) ? '#f5f3ff' : 'transparent'">
+          <td>
+            <a [routerLink]="['/deals', deal.id]">{{ deal.client_company }}</a>
+          </td>
+          <td>{{ deal.client_contact_name }}</td>
+          <td>
+            <span class="badge badge-{{ deal.phase }}">{{ deal.phase_display }}</span>
+          </td>
+          <td>{{ deal.status_display }}</td>
+          <td>{{ deal.assigned_to_name }}</td>
+          <td>{{ deal.updated_at | date: 'short' }}</td>
+          <td>
+            <button class="btn-delete" (click)="deleteDeal(deal, $event)" title="Smazat">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="7" style="text-align: center; color: #888">Žádné dealy</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

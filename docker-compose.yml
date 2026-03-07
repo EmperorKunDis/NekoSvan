@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for NekoSvan
+  nekosvan_db:
+    image: postgres:16-alpine
+    container_name: nekosvan_db
+    restart: always
+    environment:
+      POSTGRES_DB: nekosvan
+      POSTGRES_USER: nekosvan
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nekosvan_secret_123}
+    volumes:
+      - nekosvan_postgres_data:/var/lib/postgresql/data
+    networks:
+      - nekosvan_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nekosvan"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Django Backend
+  nekosvan_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nekosvan_backend
+    restart: always
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_NAME=nekosvan
+      - DB_USER=nekosvan
+      - DB_PASSWORD=${DB_PASSWORD:-nekosvan_secret_123}
+      - DB_HOST=nekosvan_db
+      - DB_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key}
+      - ALLOWED_HOSTS=localhost,posthub.work,nekosvan_backend
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://posthub.work}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://posthub.work}
+    volumes:
+      - nekosvan_media:/app/media
+      - nekosvan_static:/app/staticfiles
+    ports:
+      - "127.0.0.1:13666:8000"
+    depends_on:
+      nekosvan_db:
+        condition: service_healthy
+    networks:
+      - nekosvan_network
+
+  # Angular Frontend
+  nekosvan_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nekosvan_frontend
+    restart: always
+    ports:
+      - "127.0.0.1:12666:80"
+    depends_on:
+      - nekosvan_backend
+    networks:
+      - nekosvan_network
+
+  # ONLYOFFICE Document Server
+  nekosvan_onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: nekosvan_onlyoffice
+    restart: always
+    environment:
+      - JWT_ENABLED=false
+    volumes:
+      - nekosvan_onlyoffice_data:/var/www/onlyoffice/Data
+    ports:
+      - "127.0.0.1:9980:80"
+    networks:
+      - nekosvan_network
+
+networks:
+  nekosvan_network:
+    driver: bridge
+
+volumes:
+  nekosvan_postgres_data:
+  nekosvan_media:
+  nekosvan_static:
+  nekosvan_onlyoffice_data:

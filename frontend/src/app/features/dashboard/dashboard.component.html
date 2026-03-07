@@ -1,0 +1,205 @@
+<div class="page-header">
+  <h1>Dashboard</h1>
+</div>
+
+@if (data(); as d) {
+  <!-- Adam dashboard -->
+  @if (d['role'] === 'adam') {
+    <div class="grid grid-4">
+      <div class="card stat-card">
+        <div class="stat-value">{{ d['total_active_deals'] }}</div>
+        <div class="stat-label">Aktivni dealy</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['contracts_waiting']).length }}</div>
+        <div class="stat-label">Ceka na smlouvu</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['unpaid_payments']).length }}</div>
+        <div class="stat-label">Nezaplaceno</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ pipelineCount(d) }}</div>
+        <div class="stat-label">Fazi v pipeline</div>
+      </div>
+    </div>
+
+    @if (asArray(d['contracts_waiting']).length > 0) {
+      <div class="card">
+        <div class="card-header"><h3>Cekaji na smlouvu</h3></div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Od</th>
+              <th>Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (deal of asArray(d['contracts_waiting']); track deal['id']) {
+              <tr>
+                <td>{{ deal['client_company'] }}</td>
+                <td>{{ deal['phase_changed_at'] | date: 'short' }}</td>
+                <td>
+                  <a [routerLink]="['/deals', deal['id'], 'contract']" class="btn btn-primary"
+                    >Smlouva</a
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- Vadim dashboard -->
+  @if (d['role'] === 'vadim') {
+    <div class="grid grid-3">
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['leads_to_call']).length }}</div>
+        <div class="stat-label">Leady k obvolani</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['proposals_to_present']).length }}</div>
+        <div class="stat-label">Nabidky k prezentaci</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['milestones_for_client_review']).length }}</div>
+        <div class="stat-label">Milniky k prezentaci</div>
+      </div>
+    </div>
+
+    @if (asArray(d['leads_to_call']).length > 0) {
+      <div class="card">
+        <div class="card-header"><h3>Leady k obvolani</h3></div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Kontakt</th>
+              <th>Telefon</th>
+              <th>Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (lead of asArray(d['leads_to_call']); track lead['id']) {
+              <tr>
+                <td>{{ lead['client_company'] }}</td>
+                <td>{{ lead['client_contact_name'] }}</td>
+                <td>{{ lead['client_phone'] }}</td>
+                <td>
+                  <a [routerLink]="['/deals', lead['id'], 'questionnaire']" class="btn btn-primary"
+                    >Dotaznik</a
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- Martin dashboard -->
+  @if (d['role'] === 'martin') {
+    <div class="grid grid-3">
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['deals_to_price']).length }}</div>
+        <div class="stat-label">K oceneni</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['active_projects']).length }}</div>
+        <div class="stat-label">Aktivni projekty</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['rejected_milestones']).length }}</div>
+        <div class="stat-label">Zamitnute milniky</div>
+      </div>
+    </div>
+
+    @if (asArray(d['deals_to_price']).length > 0) {
+      <div class="card">
+        <div class="card-header"><h3>Dotazniky k oceneni</h3></div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Od</th>
+              <th>Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (deal of asArray(d['deals_to_price']); track deal['id']) {
+              <tr>
+                <td>{{ deal['client_company'] }}</td>
+                <td>{{ deal['phase_changed_at'] | date: 'short' }}</td>
+                <td>
+                  <a [routerLink]="['/deals', deal['id'], 'pricing']" class="btn btn-primary"
+                    >Ocenit</a
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- NekoSvan dashboard -->
+  @if (d['role'] === 'nekosvan') {
+    <div class="grid grid-4">
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['qa_review_queue']).length }}</div>
+        <div class="stat-label">QA k review</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-value">{{ asArray(d['active_projects']).length }}</div>
+        <div class="stat-label">Aktivni projekty</div>
+      </div>
+      @if (d['stats']) {
+        <div class="card stat-card">
+          <div class="stat-value">{{ asRecord(d['stats'])['total_deals'] }}</div>
+          <div class="stat-label">Celkem dealu</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-value">{{ asRecord(d['stats'])['conversion_rate'] }}%</div>
+          <div class="stat-label">Conversion rate</div>
+        </div>
+      }
+    </div>
+
+    @if (asArray(d['qa_review_queue']).length > 0) {
+      <div class="card">
+        <div class="card-header"><h3>QA Review Queue</h3></div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Milnik</th>
+              <th>Projekt</th>
+              <th>Demo</th>
+              <th>Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of asArray(d['qa_review_queue']); track m['id']) {
+              <tr>
+                <td>{{ m['title'] }}</td>
+                <td>{{ m['project__deal__client_company'] }}</td>
+                <td>
+                  @if (m['demo_url']) {
+                    <a [href]="m['demo_url']" target="_blank">Demo</a>
+                  }
+                </td>
+                <td><button class="btn btn-primary">Review</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+} @else {
+  <div class="card"><p>Nacitam dashboard...</p></div>
+}

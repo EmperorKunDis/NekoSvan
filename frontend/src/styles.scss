@@ -1,0 +1,284 @@
+// Praut Color Scheme
+$praut-primary: #7c3aed;       // Purple
+$praut-primary-dark: #5b21b6;  // Darker purple
+$praut-secondary: #06b6d4;     // Cyan
+$praut-gradient: linear-gradient(135deg, $praut-primary 0%, $praut-secondary 100%);
+$praut-bg: #faf5ff;            // Light purple bg
+$praut-text: #1f2937;
+$praut-text-light: #6b7280;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: $praut-text;
+  background: $praut-bg;
+}
+
+// Utility classes
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1);
+  margin-bottom: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h2, h3 {
+    margin: 0;
+    color: $praut-primary-dark;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &-primary {
+    background: $praut-primary;
+    color: #fff;
+    &:hover { background: $praut-primary-dark; }
+  }
+
+  &-success {
+    background: #10b981;
+    color: #fff;
+    &:hover { background: #059669; }
+  }
+
+  &-danger {
+    background: #ef4444;
+    color: #fff;
+    &:hover { background: #dc2626; }
+  }
+
+  &-secondary {
+    background: #f3e8ff;
+    color: $praut-primary;
+    &:hover { background: #e9d5ff; }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #fee2e2;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &-lead { background: #f3e8ff; color: $praut-primary; }
+  &-qualification { background: #fef3c7; color: #92400e; }
+  &-pricing { background: #cffafe; color: #0e7490; }
+  &-presentation { background: #e0e7ff; color: #4338ca; }
+  &-contract { background: #fce7f3; color: #be185d; }
+  &-planning { background: #fef9c3; color: #854d0e; }
+  &-development { background: $praut-primary; color: #fff; }
+  &-completed { background: #d1fae5; color: #065f46; }
+}
+
+.form-group {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: $praut-text-light;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: $praut-primary;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #f3e8ff;
+  }
+
+  th {
+    font-weight: 600;
+    color: $praut-text-light;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: #faf5ff;
+  }
+
+  tr:hover td {
+    background: #faf5ff;
+  }
+
+  a {
+    color: $praut-primary;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+
+  &-2 { grid-template-columns: repeat(2, 1fr); }
+  &-3 { grid-template-columns: repeat(3, 1fr); }
+  &-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+.stat-card {
+  text-align: center;
+  background: linear-gradient(135deg, #faf5ff 0%, #f0e7ff 100%);
+  border-radius: 12px;
+  padding: 20px;
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    background: $praut-gradient;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: $praut-text-light;
+    margin-top: 4px;
+  }
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: $praut-primary-dark;
+  }
+}
+
+// Notification list
+.notification-list {
+  .notification-item {
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+
+    &:hover {
+      background: #f3e8ff;
+    }
+
+    &.unread {
+      border-left: 3px solid $praut-primary;
+      background: #faf5ff;
+    }
+  }
+
+  .notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .notification-time {
+    font-size: 12px;
+    color: $praut-text-light;
+  }
+
+  .notification-message {
+    font-size: 13px;
+    color: $praut-text-light;
+    margin: 0;
+  }
+}
+
+.timeline {
+  .timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3e8ff;
+
+    .timeline-time {
+      font-size: 12px;
+      color: $praut-text-light;
+      min-width: 140px;
+    }
+
+    .timeline-content {
+      flex: 1;
+    }
+  }
+}
+
+// Login page styling
+.login-container {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+}

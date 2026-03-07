@@ -1,0 +1,123 @@
+<div class="page-header">
+  <h1>Projekt</h1>
+  @if (!project() && auth.userRole === 'martin') {
+    <div style="display: flex; gap: 8px; align-items: center">
+      <select [(ngModel)]="selectedTemplateId" style="padding: 8px; border-radius: 4px">
+        <option [value]="0">Automatická šablona</option>
+        @for (t of templates(); track t.id) {
+          <option [value]="t.id">{{ t.name }} ({{ t.category }})</option>
+        }
+      </select>
+      <button class="btn btn-primary" (click)="createProject()">Vytvořit projekt</button>
+    </div>
+  }
+</div>
+
+@if (project(); as p) {
+  <div class="card">
+    <div class="card-header">
+      <h3>Prehled</h3>
+      <span class="badge badge-{{ p.status }}">{{ p.status_display }}</span>
+    </div>
+    <div class="grid grid-3">
+      <div class="stat-card">
+        <div class="stat-value">{{ p.progress_percent }}%</div>
+        <div class="stat-label">Progress</div>
+      </div>
+      <div>
+        <p><strong>Zacatek:</strong> {{ p.start_date || 'Nenastaveno' }}</p>
+        <p><strong>Odhadovany konec:</strong> {{ p.estimated_end_date || 'Nenastaveno' }}</p>
+      </div>
+      <div>
+        <p><strong>Milniku:</strong> {{ p.milestones.length }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="card">
+    <div style="background: #eee; border-radius: 8px; height: 8px; overflow: hidden">
+      <div
+        [style.width.%]="p.progress_percent"
+        style="background: #00b894; height: 100%; transition: width 0.3s"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Milestones -->
+  <div class="card">
+    <h3>Milniky</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nazev</th>
+          <th>Status</th>
+          <th>Demo</th>
+          <th>Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of p.milestones; track m.id) {
+          <tr>
+            <td>{{ m.order }}</td>
+            <td>
+              <strong>{{ m.title }}</strong>
+              @if (m.description) {
+                <br /><small>{{ m.description }}</small>
+              }
+            </td>
+            <td>
+              <span class="badge">{{ m.status_display }}</span>
+            </td>
+            <td>
+              @if (m.demo_url) {
+                <a [href]="m.demo_url" target="_blank">Demo</a>
+              }
+            </td>
+            <td>
+              @if (
+                auth.userRole === 'martin' &&
+                (m.status === 'pending' || m.status === 'in_progress' || m.status === 'rejected')
+              ) {
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap">
+                  <input
+                    type="url"
+                    [(ngModel)]="demoUrl"
+                    placeholder="Demo URL"
+                    style="width: 200px"
+                  />
+                  <button class="btn btn-success" (click)="devComplete(m.id)">Hotovo</button>
+                </div>
+                @if (m.client_feedback) {
+                  <small style="color: #e74c3c; display: block; margin-top: 4px">
+                    Feedback: {{ m.client_feedback }}
+                  </small>
+                }
+              }
+              @if (
+                (auth.userRole === 'nekosvan' || auth.userRole === 'martin') &&
+                m.status === 'qa_review'
+              ) {
+                <div style="display: flex; gap: 4px">
+                  <button class="btn btn-success" (click)="qaApprove(m.id)">QA Schválit</button>
+                  <button class="btn btn-danger" (click)="qaReject(m.id)">QA Zamítnout</button>
+                </div>
+              }
+              @if (auth.userRole === 'vadim' && m.status === 'client_review') {
+                <div style="display: flex; gap: 4px">
+                  <button class="btn btn-success" (click)="clientApprove(m.id)">
+                    Klient schválil
+                  </button>
+                  <button class="btn btn-danger" (click)="clientReject(m.id)">
+                    Klient zamítl
+                  </button>
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

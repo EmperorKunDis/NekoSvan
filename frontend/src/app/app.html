@@ -1,0 +1,84 @@
+@if (auth.isAuthenticated) {
+  <div class="app-layout">
+    <!-- Mobile hamburger -->
+    <button class="hamburger" (click)="toggleSidebar()">&#9776;</button>
+
+    <!-- Overlay for mobile -->
+    @if (sidebarOpen()) {
+      <div class="sidebar-overlay" (click)="closeSidebar()"></div>
+    }
+
+    <!-- Sidebar -->
+    <nav class="sidebar" [class.open]="sidebarOpen()">
+      <div class="sidebar-header">
+        <h2>NekoSvan</h2>
+        @if (auth.currentUser(); as user) {
+          <span class="user-info">{{ user.first_name }} {{ user.last_name }}</span>
+          <span class="user-role">{{ user.role }}</span>
+        }
+      </div>
+
+      <ul class="nav-links">
+        <li>
+          <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">Dashboard</a>
+        </li>
+        <li>
+          <a routerLink="/deals" routerLinkActive="active" (click)="closeSidebar()">Dealy</a>
+        </li>
+        <li>
+          <a routerLink="/deals/new" routerLinkActive="active" (click)="closeSidebar()">+ Nový lead</a>
+        </li>
+        <li>
+          <a routerLink="/deals/from-document" routerLinkActive="active" (click)="closeSidebar()">📄 Z dokumentu</a>
+        </li>
+        <li>
+          <a routerLink="/projects" routerLinkActive="active" (click)="closeSidebar()">Projekty</a>
+        </li>
+        <li>
+          <a routerLink="/qa-queue" routerLinkActive="active" (click)="closeSidebar()">QA fronta</a>
+        </li>
+        <li>
+          <a routerLink="/payments" routerLinkActive="active" (click)="closeSidebar()">Platby</a>
+        </li>
+        <li>
+          <a routerLink="/templates" routerLinkActive="active" (click)="closeSidebar()">Šablony</a>
+        </li>
+        <li>
+          <a routerLink="/documents" routerLinkActive="active" (click)="closeSidebar()">📄 Dokumenty</a>
+        </li>
+        <li>
+          <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+            Notifikace
+            @if (notifications.unreadCount() > 0) {
+              <span class="nav-badge">{{ notifications.unreadCount() }}</span>
+            }
+          </a>
+        </li>
+        <li class="nav-divider"></li>
+        <li>
+          <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">Profil</a>
+        </li>
+        @if (auth.currentUser()?.is_master) {
+          <li>
+            <a routerLink="/team" routerLinkActive="active" (click)="closeSidebar()">Můj tým</a>
+          </li>
+        }
+      </ul>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" (click)="logout()">Odhlasit se</button>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <router-outlet />
+    </main>
+  </div>
+} @else if (auth.isLoading()) {
+  <div class="loading-screen">
+    <p>Nacitam...</p>
+  </div>
+} @else {
+  <router-outlet />
+}

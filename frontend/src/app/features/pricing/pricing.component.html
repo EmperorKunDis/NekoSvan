@@ -1,0 +1,73 @@
+<div class="page-header">
+  <h1>Cenotvorba: {{ dealInfo() }}</h1>
+</div>
+
+@if (autoCalc()) {
+  <div class="card">
+    <div class="card-header">
+      <h3>Polozky</h3>
+      <button class="btn btn-secondary" (click)="addItem()">+ Pridat polozku</button>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nazev</th>
+          <th>Hodiny</th>
+          <th>Sazba</th>
+          <th>Celkem</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track $index; let i = $index) {
+          <tr>
+            <td><input type="text" [(ngModel)]="item.name" style="width: 100%" /></td>
+            <td>
+              <input
+                type="number"
+                [(ngModel)]="item.hours"
+                (change)="updateItemTotal(i)"
+                style="width: 80px"
+              />
+            </td>
+            <td>
+              <input
+                type="number"
+                [(ngModel)]="item.rate"
+                (change)="updateItemTotal(i)"
+                style="width: 100px"
+              />
+            </td>
+            <td>{{ item.total | currency: 'CZK' : 'symbol' : '1.0-0' }}</td>
+            <td><button class="btn btn-danger" (click)="removeItem(i)">X</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Celkova cena</h3>
+      <p class="stat-value">{{ totalPrice() | currency: 'CZK' : 'symbol' : '1.0-0' }}</p>
+      <p>Zaloha (30%): {{ depositAmount() | currency: 'CZK' : 'symbol' : '1.0-0' }}</p>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label>Demo URL</label>
+        <input type="url" [(ngModel)]="demoUrl" />
+      </div>
+      <div class="form-group">
+        <label>Popis dema</label>
+        <textarea [(ngModel)]="demoDescription"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" (click)="saveAndSend()" style="margin-top: 16px">
+    Ulozit a odeslat nabidku
+  </button>
+} @else {
+  <div class="card"><p>Nacitam auto-kalkulaci...</p></div>
+}

@@ -1,4 +1,5 @@
 import pytest
+from rest_framework.test import APIClient
 
 from tests.factories import (
     AdamFactory,
@@ -32,3 +33,15 @@ def martin():
 @pytest.fixture
 def nekosvan():
     return NekoSvanFactory()
+
+
+@pytest.fixture
+def api_client():
+    """DRF APIClient for testing API endpoints"""
+    return APIClient()
+
+
+@pytest.fixture
+def internal_user():
+    """Internal user with permissions for testing"""
+    return MartinFactory()

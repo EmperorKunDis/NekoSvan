@@ -2,6 +2,8 @@ import factory
 from factory.django import DjangoModelFactory
 
 from src.accounts.models import Company, User
+from src.companies.models import Company as CRMCompany
+from src.companies.models import CompanyContact
 from src.pipeline.models import ClientCompany, Deal
 
 
@@ -68,3 +70,25 @@ class DealFactory(DjangoModelFactory):
     client_email = factory.LazyAttribute(lambda o: f"contact@{o.client_company.lower().replace(' ', '')}.cz")
     phase = Deal.Phase.LEAD
     status = Deal.Status.ACTIVE
+
+
+class CRMCompanyFactory(DjangoModelFactory):
+    """Factory for companies.Company (CRM companies, not accounts.Company)"""
+
+    class Meta:
+        model = CRMCompany
+
+    name = factory.Sequence(lambda n: f"Test Company {n}")
+    ico = factory.Sequence(lambda n: f"{10000000 + n}")
+    status = "active"
+
+
+class CRMCompanyContactFactory(DjangoModelFactory):
+    """Factory for companies.CompanyContact"""
+
+    class Meta:
+        model = CompanyContact
+
+    company = factory.SubFactory(CRMCompanyFactory)
+    name = factory.Faker("name")
+    email = factory.Faker("email")

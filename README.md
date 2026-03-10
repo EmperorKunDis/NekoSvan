@@ -41,6 +41,26 @@ docker-compose up -d
 docker-compose exec backend python manage.py migrate
 ```
 
+## 🛠️ Management Commands
+
+### Migrace dealů do Company modelu
+
+Po vytvoření Company modelu je potřeba propojit existující dealy s firmami:
+
+```bash
+# Test běhu (dry-run)
+python manage.py migrate_deals_to_companies --dry-run
+
+# Skutečná migrace
+python manage.py migrate_deals_to_companies
+```
+
+Command:
+- Najde všechny dealy bez `company` FK které mají `client_name`
+- Pro každý deal zkusí najít existující Company podle IČO nebo názvu
+- Pokud nenajde, vytvoří novou Company z flat `client_*` polí
+- Propojí deal s company přes FK
+
 ## 💾 Backup
 
 Automatické zálohy PostgreSQL databáze:

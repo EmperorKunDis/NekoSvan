@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/v1/projects/", include("src.projects.urls")),
     path("api/v1/notifications/", include("src.notifications.urls")),
     path("api/v1/documents/", include("src.documents.urls")),
+    path("api/v1/companies/", include("src.companies.urls")),
     # Client portal (public, token-based)
     path("portal/", include("src.client_portal.urls")),
     path("api/v1/portal/", include("src.client_portal.urls")),

@@ -15,6 +15,16 @@
   <div class="grid grid-2">
     <div class="card">
       <h3>Klient</h3>
+      @if (d.client_company_id) {
+        <p>
+          <strong>Firma:</strong>
+          <a [routerLink]="['/companies', d.client_company_id]" style="color: #7c3aed; font-weight: 500">
+            🏢 {{ d.client_company }}
+          </a>
+        </p>
+      } @else {
+        <p><strong>Firma:</strong> {{ d.client_company }}</p>
+      }
       <p><strong>Kontakt:</strong> {{ d.client_contact_name }}</p>
       <p><strong>Email:</strong> {{ d.client_email }}</p>
       <p><strong>Telefon:</strong> {{ d.client_phone }}</p>

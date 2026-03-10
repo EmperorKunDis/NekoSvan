@@ -1,0 +1,224 @@
+<div class="page-header">
+  <h1>{{ isEditMode() ? 'Upravit firmu' : 'Nová firma' }}</h1>
+</div>
+
+<div class="card" style="max-width: 800px">
+  <form (ngSubmit)="onSubmit()">
+    <div class="grid grid-2">
+      <!-- Název -->
+      <div class="form-group">
+        <label for="name" class="required">Název firmy</label>
+        <input
+          id="name"
+          type="text"
+          class="form-input"
+          [value]="name()"
+          (input)="name.set($any($event.target).value)"
+          placeholder="Název společnosti"
+          required
+        />
+      </div>
+
+      <!-- IČO -->
+      <div class="form-group">
+        <label for="ico" class="required">IČO</label>
+        <input
+          id="ico"
+          type="text"
+          class="form-input"
+          [value]="ico()"
+          (input)="ico.set($any($event.target).value)"
+          placeholder="12345678"
+          required
+        />
+      </div>
+
+      <!-- DIČ -->
+      <div class="form-group">
+        <label for="dic">DIČ</label>
+        <input
+          id="dic"
+          type="text"
+          class="form-input"
+          [value]="dic()"
+          (input)="dic.set($any($event.target).value)"
+          placeholder="CZ12345678"
+        />
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          class="form-input"
+          [value]="email()"
+          (input)="email.set($any($event.target).value)"
+          placeholder="kontakt@firma.cz"
+        />
+      </div>
+
+      <!-- Telefon -->
+      <div class="form-group">
+        <label for="phone">Telefon</label>
+        <input
+          id="phone"
+          type="tel"
+          class="form-input"
+          [value]="phone()"
+          (input)="phone.set($any($event.target).value)"
+          placeholder="+420 123 456 789"
+        />
+      </div>
+
+      <!-- Web -->
+      <div class="form-group">
+        <label for="website">Web</label>
+        <input
+          id="website"
+          type="url"
+          class="form-input"
+          [value]="website()"
+          (input)="website.set($any($event.target).value)"
+          placeholder="https://www.firma.cz"
+        />
+      </div>
+
+      <!-- Adresa -->
+      <div class="form-group">
+        <label for="address">Adresa</label>
+        <input
+          id="address"
+          type="text"
+          class="form-input"
+          [value]="address()"
+          (input)="address.set($any($event.target).value)"
+          placeholder="Ulice 123"
+        />
+      </div>
+
+      <!-- Město -->
+      <div class="form-group">
+        <label for="city">Město</label>
+        <input
+          id="city"
+          type="text"
+          class="form-input"
+          [value]="city()"
+          (input)="city.set($any($event.target).value)"
+          placeholder="Praha"
+        />
+      </div>
+
+      <!-- PSČ -->
+      <div class="form-group">
+        <label for="postalCode">PSČ</label>
+        <input
+          id="postalCode"
+          type="text"
+          class="form-input"
+          [value]="postalCode()"
+          (input)="postalCode.set($any($event.target).value)"
+          placeholder="120 00"
+        />
+      </div>
+
+      <!-- Sektor -->
+      <div class="form-group">
+        <label for="sector">Sektor</label>
+        <select
+          id="sector"
+          class="form-select"
+          [value]="sector()"
+          (change)="sector.set($any($event.target).value)"
+        >
+          @for (s of sectors; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select
+          id="status"
+          class="form-select"
+          [value]="status()"
+          (change)="status.set($any($event.target).value)"
+        >
+          @for (s of statuses; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Poznámky -->
+    <div class="form-group" style="margin-top: 16px">
+      <label for="notes">Poznámky</label>
+      <textarea
+        id="notes"
+        class="form-input"
+        [value]="notes()"
+        (input)="notes.set($any($event.target).value)"
+        rows="4"
+        placeholder="Interní poznámky o firmě..."
+      ></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 8px; margin-top: 24px">
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Ukládám...' : (isEditMode() ? 'Uložit změny' : 'Vytvořit firmu') }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        (click)="cancel()"
+        [disabled]="isLoading()"
+      >
+        Zrušit
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .required::after {
+    content: ' *';
+    color: #dc2626;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #374151;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+</style>

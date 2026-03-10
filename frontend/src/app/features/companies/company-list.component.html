@@ -1,0 +1,98 @@
+<div class="page-header">
+  <h1>🏢 Firmy ({{ totalCount() }})</h1>
+  <a routerLink="/companies/new" class="btn btn-primary">+ Nová firma</a>
+</div>
+
+<div class="card" style="margin-bottom: 16px">
+  <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center">
+    <!-- Status filter -->
+    <select 
+      [value]="filterStatus()"
+      (change)="onStatusChange($any($event.target).value)"
+      class="form-select"
+      style="min-width: 150px"
+    >
+      @for (status of statuses; track status.value) {
+        <option [value]="status.value">{{ status.label }}</option>
+      }
+    </select>
+
+    <!-- Sector filter -->
+    <select 
+      [value]="filterSector()"
+      (change)="onSectorChange($any($event.target).value)"
+      class="form-select"
+      style="min-width: 150px"
+    >
+      @for (sector of sectors; track sector.value) {
+        <option [value]="sector.value">{{ sector.label }}</option>
+      }
+    </select>
+
+    <!-- Search -->
+    <input
+      type="text"
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+      (keyup.enter)="onSearch()"
+      placeholder="Hledat firmu..."
+      class="form-input"
+      style="flex: 1; min-width: 200px"
+    />
+    <button class="btn" (click)="onSearch()">🔍 Hledat</button>
+  </div>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Název</th>
+        <th>IČO</th>
+        <th>Status</th>
+        <th>Sektor</th>
+        <th>Počet dealů</th>
+        <th>Poslední aktivita</th>
+        <th style="width: 80px">Akce</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (company of companies(); track company.id) {
+        <tr>
+          <td>
+            <a [routerLink]="['/companies', company.id]" style="color: #7c3aed; font-weight: 500">
+              {{ company.name }}
+            </a>
+          </td>
+          <td>{{ company.ico }}</td>
+          <td>
+            <span 
+              class="badge"
+              [style.background]="company.status === 'active' ? '#06b6d4' : '#888'"
+            >
+              {{ company.status_display }}
+            </span>
+          </td>
+          <td>{{ company.sector || '—' }}</td>
+          <td>{{ company.deal_count || 0 }}</td>
+          <td>{{ company.last_activity ? (company.last_activity | date: 'short') : '—' }}</td>
+          <td>
+            <button 
+              class="btn-delete" 
+              (click)="deleteCompany(company, $event)" 
+              title="Smazat"
+            >
+              🗑️
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="7" style="text-align: center; color: #888">
+            Žádné firmy nenalezeny
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

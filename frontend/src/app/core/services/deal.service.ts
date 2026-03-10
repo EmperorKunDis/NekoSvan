@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 export interface Deal {
   id: number;
   client_company: string;
+  client_company_id?: number | null;
   client_contact_name: string;
   client_email: string;
   client_phone: string;

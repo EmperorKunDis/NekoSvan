@@ -87,6 +87,32 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'companies',
+    loadComponent: () =>
+      import('./features/companies/company-list.component').then((m) => m.CompanyListComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'companies/new',
+    loadComponent: () =>
+      import('./features/companies/company-form.component').then((m) => m.CompanyFormComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'companies/:id',
+    loadComponent: () =>
+      import('./features/companies/company-detail.component').then(
+        (m) => m.CompanyDetailComponent,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'companies/:id/edit',
+    loadComponent: () =>
+      import('./features/companies/company-form.component').then((m) => m.CompanyFormComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'templates',
     loadComponent: () =>
       import('./features/templates/template-list.component').then((m) => m.TemplateListComponent),

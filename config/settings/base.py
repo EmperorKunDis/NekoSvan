@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "src.notifications",
     "src.client_portal",
     "src.documents",
+    "src.companies",
 ]
 
 MIDDLEWARE = [

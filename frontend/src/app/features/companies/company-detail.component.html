@@ -1,0 +1,554 @@
+@if (company(); as c) {
+  <div class="page-header">
+    <h1>🏢 {{ c.name }}</h1>
+    <div style="display: flex; gap: 8px">
+      <a [routerLink]="['/companies', c.id, 'edit']" class="btn btn-primary">
+        ✏️ Upravit
+      </a>
+      <a routerLink="/companies" class="btn">
+        ← Zpět na seznam
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'overview'"
+      (click)="setTab('overview')"
+    >
+      📋 Přehled
+    </button>
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'deals'"
+      (click)="setTab('deals')"
+    >
+      💼 Dealy ({{ deals().length }})
+    </button>
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'communications'"
+      (click)="setTab('communications')"
+    >
+      💬 Komunikace ({{ communications().length }})
+    </button>
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'documents'"
+      (click)="setTab('documents')"
+    >
+      📄 Dokumenty ({{ documents().length }})
+    </button>
+  </div>
+
+  <!-- Tab: Přehled -->
+  @if (activeTab() === 'overview') {
+    <div class="grid grid-2">
+      <!-- Základní info -->
+      <div class="card">
+        <h3>Základní informace</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Název:</span>
+            <span class="info-value">{{ c.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">IČO:</span>
+            <span class="info-value">{{ c.ico }}</span>
+          </div>
+          @if (c.dic) {
+            <div class="info-item">
+              <span class="info-label">DIČ:</span>
+              <span class="info-value">{{ c.dic }}</span>
+            </div>
+          }
+          @if (c.email) {
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">
+                <a [href]="'mailto:' + c.email" style="color: #7c3aed">{{ c.email }}</a>
+              </span>
+            </div>
+          }
+          @if (c.phone) {
+            <div class="info-item">
+              <span class="info-label">Telefon:</span>
+              <span class="info-value">
+                <a [href]="'tel:' + c.phone" style="color: #7c3aed">{{ c.phone }}</a>
+              </span>
+            </div>
+          }
+          @if (c.website) {
+            <div class="info-item">
+              <span class="info-label">Web:</span>
+              <span class="info-value">
+                <a [href]="c.website" target="_blank" style="color: #7c3aed">{{ c.website }}</a>
+              </span>
+            </div>
+          }
+          @if (c.address) {
+            <div class="info-item">
+              <span class="info-label">Adresa:</span>
+              <span class="info-value">{{ c.address }}</span>
+            </div>
+          }
+          @if (c.city) {
+            <div class="info-item">
+              <span class="info-label">Město:</span>
+              <span class="info-value">{{ c.city }} {{ c.postal_code }}</span>
+            </div>
+          }
+          <div class="info-item">
+            <span class="info-label">Sektor:</span>
+            <span class="info-value">{{ c.sector || '—' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Status:</span>
+            <span class="badge" [style.background]="c.status === 'active' ? '#06b6d4' : '#888'">
+              {{ c.status_display }}
+            </span>
+          </div>
+        </div>
+
+        @if (c.notes) {
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb">
+            <strong style="display: block; margin-bottom: 8px">Poznámky:</strong>
+            <p style="white-space: pre-wrap; color: #6b7280">{{ c.notes }}</p>
+          </div>
+        }
+      </div>
+
+      <!-- Kontakty -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+          <h3 style="margin: 0">Kontakty ({{ contacts().length }})</h3>
+          <button class="btn btn-sm btn-primary" (click)="toggleContactForm()">
+            {{ showContactForm() ? '✕' : '+' }} {{ showContactForm() ? 'Zrušit' : 'Přidat kontakt' }}
+          </button>
+        </div>
+
+        @if (showContactForm()) {
+          <div class="form-card">
+            <div class="form-group">
+              <label>Jméno *</label>
+              <input
+                type="text"
+                class="form-input"
+                [value]="newContactName()"
+                (input)="newContactName.set($any($event.target).value)"
+                placeholder="Jan Novák"
+              />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                class="form-input"
+                [value]="newContactEmail()"
+                (input)="newContactEmail.set($any($event.target).value)"
+                placeholder="jan@firma.cz"
+              />
+            </div>
+            <div class="form-group">
+              <label>Telefon</label>
+              <input
+                type="tel"
+                class="form-input"
+                [value]="newContactPhone()"
+                (input)="newContactPhone.set($any($event.target).value)"
+                placeholder="+420 123 456 789"
+              />
+            </div>
+            <div class="form-group">
+              <label>Pozice</label>
+              <input
+                type="text"
+                class="form-input"
+                [value]="newContactPosition()"
+                (input)="newContactPosition.set($any($event.target).value)"
+                placeholder="Ředitel"
+              />
+            </div>
+            <div class="form-group">
+              <label>Poznámky</label>
+              <textarea
+                class="form-input"
+                [value]="newContactNotes()"
+                (input)="newContactNotes.set($any($event.target).value)"
+                rows="2"
+              ></textarea>
+            </div>
+            <button class="btn btn-primary" (click)="createContact()">Přidat</button>
+          </div>
+        }
+
+        <div class="contact-list">
+          @for (contact of contacts(); track contact.id) {
+            <div class="contact-item">
+              <div>
+                <strong>{{ contact.name }}</strong>
+                @if (contact.position) {
+                  <span style="color: #6b7280"> — {{ contact.position }}</span>
+                }
+                @if (contact.email) {
+                  <div style="font-size: 0.9rem">
+                    <a [href]="'mailto:' + contact.email" style="color: #7c3aed">{{ contact.email }}</a>
+                  </div>
+                }
+                @if (contact.phone) {
+                  <div style="font-size: 0.9rem; color: #6b7280">{{ contact.phone }}</div>
+                }
+                @if (contact.notes) {
+                  <div style="font-size: 0.85rem; color: #9ca3af; margin-top: 4px">
+                    {{ contact.notes }}
+                  </div>
+                }
+              </div>
+              <button
+                class="btn-delete"
+                (click)="deleteContact(contact.id)"
+                title="Smazat"
+              >
+                🗑️
+              </button>
+            </div>
+          } @empty {
+            <p style="color: #888; font-size: 0.9rem">Zatím žádné kontakty</p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Tab: Dealy -->
+  @if (activeTab() === 'deals') {
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+        <h3 style="margin: 0">Dealy této firmy</h3>
+        <button class="btn btn-primary" (click)="toggleNewDealForm()">
+          {{ showNewDealForm() ? '✕ Zrušit' : '+ Nový deal' }}
+        </button>
+      </div>
+
+      @if (showNewDealForm()) {
+        <div class="form-card">
+          <div class="form-group">
+            <label>Popis dealu *</label>
+            <textarea
+              class="form-input"
+              [value]="newDealDescription()"
+              (input)="newDealDescription.set($any($event.target).value)"
+              rows="3"
+              placeholder="Stručný popis požadavku nebo projektu..."
+            ></textarea>
+          </div>
+          <button class="btn btn-primary" (click)="createDeal()">Vytvořit deal</button>
+        </div>
+      }
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Klient</th>
+            <th>Popis</th>
+            <th>Fáze</th>
+            <th>Status</th>
+            <th>Přiřazen</th>
+            <th>Vytvořeno</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (deal of deals(); track deal.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/deals', deal.id]" style="color: #7c3aed">
+                  {{ deal.client_company }}
+                </a>
+              </td>
+              <td>{{ deal.description || '—' }}</td>
+              <td>
+                <span class="badge badge-{{ deal.phase }}">{{ deal.phase_display }}</span>
+              </td>
+              <td>{{ deal.status_display }}</td>
+              <td>{{ deal.assigned_to_name }}</td>
+              <td>{{ deal.created_at | date: 'short' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" style="text-align: center; color: #888">
+                Zatím žádné dealy
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Tab: Komunikace -->
+  @if (activeTab() === 'communications') {
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+        <h3 style="margin: 0">Timeline komunikace</h3>
+        <button class="btn btn-primary" (click)="toggleCommForm()">
+          {{ showCommForm() ? '✕ Zrušit' : '+ Přidat záznam' }}
+        </button>
+      </div>
+
+      @if (showCommForm()) {
+        <div class="form-card">
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label>Typ *</label>
+              <select
+                class="form-select"
+                [value]="newCommType()"
+                (change)="newCommType.set($any($event.target).value)"
+              >
+                @for (type of commTypes; track type.value) {
+                  <option [value]="type.value">{{ type.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Předmět</label>
+              <input
+                type="text"
+                class="form-input"
+                [value]="newCommSubject()"
+                (input)="newCommSubject.set($any($event.target).value)"
+                placeholder="Téma komunikace"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Obsah *</label>
+            <textarea
+              class="form-input"
+              [value]="newCommContent()"
+              (input)="newCommContent.set($any($event.target).value)"
+              rows="4"
+              placeholder="Popis komunikace, poznámky..."
+            ></textarea>
+          </div>
+          <button class="btn btn-primary" (click)="createCommunication()">Přidat</button>
+        </div>
+      }
+
+      <div class="timeline">
+        @for (comm of communications(); track comm.id) {
+          <div class="timeline-item">
+            <div class="timeline-time">
+              {{ comm.created_at | date: 'medium' }}
+            </div>
+            <div class="timeline-content">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px">
+                <span class="badge" style="background: #06b6d4">{{ comm.type_display }}</span>
+                <strong>{{ comm.user_name }}</strong>
+              </div>
+              @if (comm.subject) {
+                <div style="font-weight: 500; margin-bottom: 4px">{{ comm.subject }}</div>
+              }
+              <p style="white-space: pre-wrap; color: #6b7280">{{ comm.content }}</p>
+            </div>
+          </div>
+        } @empty {
+          <p style="color: #888">Zatím žádná komunikace</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Tab: Dokumenty -->
+  @if (activeTab() === 'documents') {
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+        <h3 style="margin: 0">Dokumenty</h3>
+        <label class="btn btn-primary" style="cursor: pointer">
+          {{ uploadingFile() ? '⏳ Nahrávám...' : '⬆️ Nahrát dokument' }}
+          <input
+            type="file"
+            (change)="onFileSelected($event)"
+            style="display: none"
+            [disabled]="uploadingFile()"
+          />
+        </label>
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Název</th>
+            <th>Nahrál</th>
+            <th>Datum</th>
+            <th style="width: 80px">Akce</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (doc of documents(); track doc.id) {
+            <tr>
+              <td>
+                <a [href]="doc.file_url" target="_blank" style="color: #7c3aed">
+                  {{ doc.name }}
+                </a>
+              </td>
+              <td>{{ doc.uploaded_by_name }}</td>
+              <td>{{ doc.uploaded_at | date: 'short' }}</td>
+              <td>
+                <button
+                  class="btn-delete"
+                  (click)="deleteDocument(doc.id)"
+                  title="Smazat"
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4" style="text-align: center; color: #888">
+                Zatím žádné dokumenty
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+} @else {
+  <div class="card">
+    <p>Načítám firmu...</p>
+  </div>
+}
+
+<style>
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .tab {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.2s;
+  }
+
+  .tab:hover {
+    color: #7c3aed;
+    background: #f5f3ff;
+  }
+
+  .tab.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+  }
+
+  .info-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .info-item {
+    display: flex;
+    gap: 8px;
+  }
+
+  .info-label {
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 100px;
+  }
+
+  .info-value {
+    color: #111827;
+  }
+
+  .form-card {
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #374151;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .contact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 6px;
+  }
+
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .timeline-item:last-child {
+    border-bottom: none;
+  }
+
+  .timeline-time {
+    min-width: 150px;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .timeline-content {
+    flex: 1;
+  }
+</style>

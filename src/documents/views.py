@@ -1,12 +1,7 @@
-import hashlib
 import json
-import time
-from urllib.parse import urljoin
 
-from django.conf import settings
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import status, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -14,6 +9,7 @@ from rest_framework.views import APIView
 
 from src.accounts.permissions import IsInternalUser
 
+from .jwt_utils import generate_onlyoffice_token, verify_onlyoffice_token
 from .models import Document, DocumentVersion
 from .serializers import DocumentSerializer, DocumentVersionSerializer
 
@@ -69,11 +65,16 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
 def get_onlyoffice_config(document: Document, user, request) -> dict:
     """Generate ONLYOFFICE Document Server configuration."""
-    # Document URL - ONLYOFFICE container fetches this internally
-    document_url = f"http://nekosvan_backend:8000/media/{document.file.name}"
+    # Get the public domain from request
+    # ONLYOFFICE needs a publicly accessible URL to download the document
+    host = request.get_host() if request else "posthub.work"
+    protocol = "https"  # Always use HTTPS (Cloudflare terminates SSL)
 
-    # Callback URL for saving - also internal
-    callback_url = "http://nekosvan_backend:8000/api/v1/documents/callback/"
+    # Document URL - must be publicly accessible for ONLYOFFICE to download
+    document_url = f"{protocol}://{host}/app/media/{document.file.name}"
+
+    # Callback URL for saving - internal Docker network URL
+    callback_url = "http://apiserver:8000/api/v1/documents/callback/"
 
     doc_type_map = {
         "docx": "word",
@@ -134,17 +135,34 @@ def get_onlyoffice_config(document: Document, user, request) -> dict:
         "width": "100%",
     }
 
+    token = generate_onlyoffice_token(config)
+    if token:
+        config["token"] = token
+
     return config
 
 
 class OnlyOfficeCallbackView(APIView):
     """Callback endpoint for ONLYOFFICE Document Server."""
 
+    authentication_classes = []  # No auth - ONLYOFFICE calls this internally
     permission_classes = []  # ONLYOFFICE calls this without auth
 
-    @csrf_exempt
     def post(self, request):
         """Handle ONLYOFFICE callback."""
+        # Verify JWT if secret is configured
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            payload = verify_onlyoffice_token(token)
+            if payload is None:
+                return JsonResponse({"error": 1})
+        else:
+            # No auth header — check if JWT is required
+            payload = verify_onlyoffice_token("")
+            if payload is None:
+                return JsonResponse({"error": 1})
+
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:

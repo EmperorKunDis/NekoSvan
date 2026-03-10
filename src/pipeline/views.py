@@ -18,6 +18,7 @@ from .serializers import (
     PhaseAdvanceSerializer,
     RevisionRequestSerializer,
 )
+from .validators import PhaseTransitionError
 
 
 class DealViewSet(viewsets.ModelViewSet):
@@ -62,6 +63,11 @@ class DealViewSet(viewsets.ModelViewSet):
         ser.is_valid(raise_exception=True)
         try:
             deal = services.advance_phase(deal, request.user, note=ser.validated_data["note"])
+        except PhaseTransitionError as e:
+            return Response(
+                {"error": str(e), "phase": e.phase, "missing": e.missing},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(DealSerializer(deal).data)
@@ -82,6 +88,17 @@ class DealViewSet(viewsets.ModelViewSet):
         deal = self.get_object()
         activities = deal.activities.select_related("user").all()
         return Response(DealActivitySerializer(activities, many=True).data)
+
+    @action(detail=True, methods=["post"], url_path="refresh-portal-token")
+    def refresh_portal_token(self, request, pk=None):
+        """Refresh portal token with new expiration."""
+        deal = self.get_object()
+        days = int(request.data.get("days", 90))
+        deal.refresh_portal_token(days=days)
+        return Response({
+            "portal_token": str(deal.portal_token),
+            "portal_token_expires_at": deal.portal_token_expires_at.isoformat(),
+        })
 
     @action(detail=True, methods=["delete"], url_path="hard-delete")
     def hard_delete(self, request, pk=None):

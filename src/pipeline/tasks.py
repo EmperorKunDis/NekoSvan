@@ -5,8 +5,17 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 
 
-@shared_task
-def check_inactive_deals() -> int:
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=60,
+    retry_backoff_max=600,
+    max_retries=3,
+    soft_time_limit=120,
+    time_limit=180,
+    acks_late=True,
+)
+def check_inactive_deals(self) -> int:
     """Periodic task: remind assignees about deals inactive for 48+ hours."""
     from datetime import timedelta
 
@@ -15,6 +24,8 @@ def check_inactive_deals() -> int:
     from src.notifications.services import create_notification, trigger_n8n_webhook
 
     from .models import Deal
+
+    logger.info(f"[{self.request.id}] Checking inactive deals")
 
     cutoff = timezone.now() - timedelta(hours=48)
     inactive_deals = Deal.objects.filter(
@@ -48,5 +59,5 @@ def check_inactive_deals() -> int:
         count += 1
 
     if count:
-        logger.info(f"Sent {count} inactivity reminders")
+        logger.info(f"[{self.request.id}] Sent {count} inactivity reminders")
     return count

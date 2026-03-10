@@ -70,7 +70,7 @@ interface OnlyOfficeConfig {
 })
 export class DocumentEditorComponent implements OnInit, OnDestroy {
   @Input() documentId!: string;
-  @Input() documentServerUrl = "https://posthub.work/app/onlyoffice";
+  @Input() documentServerUrl = window.location.origin + "/app/onlyoffice";
   @ViewChild('editorContainer') editorContainer!: ElementRef;
 
   loading = signal(true);

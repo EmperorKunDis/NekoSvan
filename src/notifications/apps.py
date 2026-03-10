@@ -6,3 +6,10 @@ class NotificationsConfig(AppConfig):
     name = "src.notifications"
     label = "notifications"
     verbose_name = "Notifications"
+
+    def ready(self):
+        from src.pipeline.signals import deal_phase_changed
+
+        from .receivers import notify_on_phase_change
+
+        deal_phase_changed.connect(notify_on_phase_change)

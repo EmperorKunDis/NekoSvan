@@ -26,6 +26,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: nekosvan_backend
+    hostname: apiserver
     restart: always
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
@@ -35,19 +36,29 @@ services:
       - DB_HOST=nekosvan_db
       - DB_PORT=5432
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key}
-      - ALLOWED_HOSTS=localhost,posthub.work,nekosvan_backend
+      - ALLOWED_HOSTS=localhost,posthub.work,apiserver,apiserver:8000,app.praut.cz
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://posthub.work}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://posthub.work}
+      - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      - ONLYOFFICE_URL=http://nekosvan_onlyoffice:80
     volumes:
       - nekosvan_media:/app/media
       - nekosvan_static:/app/staticfiles
     ports:
       - "127.0.0.1:13666:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       nekosvan_db:
         condition: service_healthy
     networks:
-      - nekosvan_network
+      nekosvan_network:
+        aliases:
+          - apiserver
 
   # Angular Frontend
   nekosvan_frontend:
@@ -69,7 +80,10 @@ services:
     container_name: nekosvan_onlyoffice
     restart: always
     environment:
-      - JWT_ENABLED=false
+      - JWT_ENABLED=${ONLYOFFICE_JWT_ENABLED:-false}
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      - ALLOW_PRIVATE_IP_ADDRESS=true
+      - ALLOW_META_IP_ADDRESS=true
     volumes:
       - nekosvan_onlyoffice_data:/var/www/onlyoffice/Data
     ports:

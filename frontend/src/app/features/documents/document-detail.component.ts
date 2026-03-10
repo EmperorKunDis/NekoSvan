@@ -103,8 +103,8 @@ export class DocumentDetailComponent implements OnInit {
   document = signal<Document | null>(null);
   loading = signal(true);
 
-  // Configure this to point to your ONLYOFFICE Document Server
-  documentServerUrl = "https://posthub.work/app/onlyoffice";
+  // Use relative URL - works on any domain (posthub.work, app.praut.cz, etc.)
+  documentServerUrl = window.location.origin + "/app/onlyoffice";
 
   constructor(
     private route: ActivatedRoute,

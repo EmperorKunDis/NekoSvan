@@ -2,10 +2,11 @@ import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService } from './core/services/notification.service';
+import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -20,7 +21,7 @@ export class App implements OnInit {
   ngOnInit(): void {
     this.auth.loadCurrentUser();
     this.notifications.loadUnreadCount();
-    setInterval(() => this.notifications.loadUnreadCount(), 30000);
+    this.notifications.connectSSE();
   }
 
   toggleSidebar(): void {

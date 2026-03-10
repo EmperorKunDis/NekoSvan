@@ -62,4 +62,17 @@ export class DealDetailComponent implements OnInit {
     if (!deal) return;
     this.dealService.getTimeline(deal.id).subscribe({ next: (a) => this.activities.set(a) });
   }
+
+  getPortalUrl(): string {
+    const deal = this.deal();
+    if (!deal) return '';
+    return `${window.location.origin}/portal/${deal.portal_token}`;
+  }
+
+  copyPortalUrl(): void {
+    const url = this.getPortalUrl();
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Odkaz zkopírován do schránky!');
+    });
+  }
 }

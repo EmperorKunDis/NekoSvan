@@ -1,12 +1,18 @@
 from django.contrib import admin
 
-from .models import Deal, DealActivity
+from .models import ClientCompany, Deal, DealActivity
 
 
 class DealActivityInline(admin.TabularInline):
     model = DealActivity
     extra = 0
     readonly_fields = ("user", "action", "note", "created_at")
+
+
+@admin.register(ClientCompany)
+class ClientCompanyAdmin(admin.ModelAdmin):
+    list_display = ("name", "contact_name", "email", "ico", "created_at")
+    search_fields = ("name", "ico", "email", "contact_name")
 
 
 @admin.register(Deal)

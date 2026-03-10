@@ -29,9 +29,24 @@
       <p><strong>Prirazen:</strong> {{ d.assigned_to_name }}</p>
       <p><strong>Revize:</strong> {{ d.revision_count }} / 3</p>
       <p><strong>Vytvoreno:</strong> {{ d.created_at | date: 'medium' }}</p>
-      <p>
-        <strong>Portal token:</strong> <code>{{ d.portal_token }}</code>
-      </p>
+      <div style="margin-top: 12px;">
+        <strong>Klientský portál:</strong>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+          <input
+            type="text"
+            [value]="getPortalUrl()"
+            readonly
+            style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; background: #f5f5f5;"
+          />
+          <button
+            class="btn btn-sm"
+            (click)="copyPortalUrl()"
+            style="padding: 4px 12px; font-size: 0.9rem;"
+          >
+            Kopírovat
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -19,24 +19,31 @@ from .serializers import (
     PortalProjectSerializer,
     PortalProposalSerializer,
 )
+from .services import log_portal_access
+from .throttles import PortalReadThrottle, PortalWriteThrottle
 
 
 def get_deal_by_token(token: str) -> Deal | None:
     try:
-        return Deal.objects.get(portal_token=token)
+        deal = Deal.objects.get(portal_token=token)
     except (Deal.DoesNotExist, ValueError):
         return None
+    if not deal.is_portal_token_valid():
+        return None
+    return deal
 
 
 class PortalDashboardView(APIView):
     """Client portal dashboard — overview of deal, proposal, project."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalReadThrottle]
 
     def get(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "dashboard_view")
 
         data = {
             "deal": PortalDealSerializer(deal).data,
@@ -69,11 +76,13 @@ class PortalProposalAcceptView(APIView):
     """Client accepts a proposal."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalWriteThrottle]
 
     def post(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "proposal_accept")
 
         proposal = deal.proposals.filter(status="sent").order_by("-version").first()
         if not proposal:
@@ -93,11 +102,13 @@ class PortalProposalRejectView(APIView):
     """Client requests revision on a proposal."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalWriteThrottle]
 
     def post(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "proposal_reject")
 
         ser = ClientFeedbackSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -121,11 +132,13 @@ class PortalMilestoneApproveView(APIView):
     """Client approves a milestone."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalWriteThrottle]
 
     def post(self, request, token, milestone_id):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "milestone_approve")
 
         try:
             milestone = Milestone.objects.get(
@@ -145,11 +158,13 @@ class PortalMilestoneRejectView(APIView):
     """Client rejects a milestone with feedback."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalWriteThrottle]
 
     def post(self, request, token, milestone_id):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "milestone_reject")
 
         ser = ClientFeedbackSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -171,11 +186,13 @@ class PortalContractDownloadView(APIView):
     """Client downloads contract PDF."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PortalReadThrottle]
 
     def get(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
             return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+        log_portal_access(deal, request, "contract_download")
 
         try:
             contract = Contract.objects.get(deal=deal)

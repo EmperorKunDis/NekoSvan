@@ -1,6 +1,5 @@
 import logging
 
-import requests
 from django.conf import settings
 
 from src.accounts.models import User
@@ -23,20 +22,16 @@ def create_notification(user: User, title: str, message: str, deal: Deal | None 
 
 
 def trigger_n8n_webhook(event: str, payload: dict) -> bool:
-    """Send event to N8N webhook for external notifications (email, etc.)."""
+    """Send event to N8N webhook asynchronously via Celery task."""
+    from .tasks import send_n8n_webhook
+
     base_url = getattr(settings, "N8N_WEBHOOK_BASE_URL", "")
     if not base_url:
         logger.warning(f"N8N_WEBHOOK_BASE_URL not configured, skipping event: {event}")
         return False
 
-    url = f"{base_url}/{event}"
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-        return True
-    except requests.RequestException:
-        logger.exception(f"Failed to trigger N8N webhook: {event}")
-        return False
+    send_n8n_webhook.delay(event, payload)
+    return True
 
 
 def notify_phase_change(deal: Deal) -> None:

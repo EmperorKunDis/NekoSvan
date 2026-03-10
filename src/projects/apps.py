@@ -6,3 +6,10 @@ class ProjectsConfig(AppConfig):
     name = "src.projects"
     label = "projects"
     verbose_name = "Projects"
+
+    def ready(self):
+        from src.pipeline.signals import deal_phase_changed
+
+        from .receivers import auto_create_project
+
+        deal_phase_changed.connect(auto_create_project)

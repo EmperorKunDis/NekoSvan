@@ -1,24 +1,32 @@
 from django.utils import timezone
 
 from src.accounts.models import User
-from src.notifications.services import notify_deal_archived, notify_phase_change
+from src.notifications.services import notify_deal_archived
 
 from .models import Deal, DealActivity
+from .signals import deal_archived, deal_phase_changed, deal_revision_requested
+
+# Semantic role constants
+ROLE_SALES = User.Role.VADIM
+ROLE_PRICING = User.Role.MARTIN
+ROLE_CONTRACTS = User.Role.ADAM
+ROLE_PROJECT_MANAGEMENT = User.Role.MARTIN
+ROLE_QA = User.Role.NEKOSVAN
 
 # Phase transition rules: {current_phase: (next_phase, assigned_role)}
 PHASE_TRANSITIONS: dict[str, tuple[str, str]] = {
-    Deal.Phase.LEAD: (Deal.Phase.QUALIFICATION, User.Role.VADIM),
-    Deal.Phase.QUALIFICATION: (Deal.Phase.PRICING, User.Role.MARTIN),
-    Deal.Phase.PRICING: (Deal.Phase.PRESENTATION, User.Role.VADIM),
-    Deal.Phase.PRESENTATION: (Deal.Phase.CONTRACT, User.Role.ADAM),
-    Deal.Phase.CONTRACT: (Deal.Phase.PLANNING, User.Role.MARTIN),
-    Deal.Phase.PLANNING: (Deal.Phase.DEVELOPMENT, User.Role.MARTIN),
-    Deal.Phase.DEVELOPMENT: (Deal.Phase.COMPLETED, User.Role.NEKOSVAN),
+    Deal.Phase.LEAD: (Deal.Phase.QUALIFICATION, ROLE_SALES),
+    Deal.Phase.QUALIFICATION: (Deal.Phase.PRICING, ROLE_PRICING),
+    Deal.Phase.PRICING: (Deal.Phase.PRESENTATION, ROLE_SALES),
+    Deal.Phase.PRESENTATION: (Deal.Phase.CONTRACT, ROLE_CONTRACTS),
+    Deal.Phase.CONTRACT: (Deal.Phase.PLANNING, ROLE_PROJECT_MANAGEMENT),
+    Deal.Phase.PLANNING: (Deal.Phase.DEVELOPMENT, ROLE_PROJECT_MANAGEMENT),
+    Deal.Phase.DEVELOPMENT: (Deal.Phase.COMPLETED, ROLE_QA),
 }
 
 # Reverse transition for revision
 REVISION_TRANSITION: dict[str, tuple[str, str]] = {
-    Deal.Phase.PRESENTATION: (Deal.Phase.PRICING, User.Role.MARTIN),
+    Deal.Phase.PRESENTATION: (Deal.Phase.PRICING, ROLE_PRICING),
 }
 
 MAX_REVISIONS = 3
@@ -28,12 +36,18 @@ def get_assignee_for_role(role: str) -> User | None:
     return User.objects.filter(role=role, is_active=True).first()
 
 
-def advance_phase(deal: Deal, user: User, note: str = "") -> Deal:
+def advance_phase(deal: Deal, user: User, note: str = "", validate: bool = True) -> Deal:
     """Advance deal to the next phase in the pipeline."""
     if deal.phase not in PHASE_TRANSITIONS:
         raise ValueError(f"Cannot advance from phase '{deal.phase}'")
 
     next_phase, assigned_role = PHASE_TRANSITIONS[deal.phase]
+
+    if validate:
+        from .validators import validate_transition
+
+        validate_transition(deal, next_phase)
+
     old_phase = deal.phase
 
     deal.phase = next_phase
@@ -48,14 +62,15 @@ def advance_phase(deal: Deal, user: User, note: str = "") -> Deal:
         note=note,
     )
 
-    # Notify assigned user about phase change
-    notify_phase_change(deal)
-
-    # Auto-create project when entering PLANNING phase
-    if next_phase == Deal.Phase.PLANNING:
-        from src.projects.services import create_project_from_deal
-
-        create_project_from_deal(deal)
+    # Emit signal — receivers handle notifications and project creation
+    deal_phase_changed.send(
+        sender=Deal,
+        deal=deal,
+        old_phase=old_phase,
+        new_phase=next_phase,
+        user=user,
+        note=note,
+    )
 
     return deal
 
@@ -76,7 +91,9 @@ def request_revision(deal: Deal, user: User, feedback: str) -> Deal:
             action="deal_archived:max_revisions",
             note=f"Max revisions ({MAX_REVISIONS}) reached. {feedback}",
         )
-        notify_deal_archived(deal, reason=f"Max revisions ({MAX_REVISIONS}) reached")
+        reason = f"Max revisions ({MAX_REVISIONS}) reached"
+        notify_deal_archived(deal, reason=reason)
+        deal_archived.send(sender=Deal, deal=deal, reason=reason)
         return deal
 
     next_phase, assigned_role = REVISION_TRANSITION[deal.phase]
@@ -93,6 +110,8 @@ def request_revision(deal: Deal, user: User, feedback: str) -> Deal:
         action=f"revision_requested:{old_phase}:{next_phase}",
         note=feedback,
     )
+
+    deal_revision_requested.send(sender=Deal, deal=deal, user=user, feedback=feedback)
 
     return deal
 

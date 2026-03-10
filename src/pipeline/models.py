@@ -1,7 +1,33 @@
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+
+# Default expiration periods for portal tokens
+PORTAL_TOKEN_DEFAULT_DAYS = 90
+PORTAL_TOKEN_ARCHIVED_DAYS = 30
+
+
+class ClientCompany(models.Model):
+    """Structured client company data (replaces flat fields on Deal)."""
+
+    name = models.CharField(max_length=200)
+    contact_name = models.CharField(max_length=200, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    ico = models.CharField("IČO", max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "client companies"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Deal(models.Model):
@@ -20,7 +46,16 @@ class Deal(models.Model):
         ARCHIVED = "archived", "Archivováno"
         ON_HOLD = "on_hold", "Pozastaveno"
 
-    # Client info
+    # Client info (structured — preferred)
+    client = models.ForeignKey(
+        ClientCompany,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="deals",
+    )
+
+    # Client info (flat — deprecated, kept for backward compat)
     client_company = models.CharField(max_length=200)
     client_contact_name = models.CharField(max_length=200)
     client_email = models.EmailField()
@@ -50,6 +85,8 @@ class Deal(models.Model):
 
     # Client portal token
     portal_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    portal_token_expires_at = models.DateTimeField(null=True, blank=True)
+    portal_token_last_accessed_at = models.DateTimeField(null=True, blank=True)
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -66,6 +103,42 @@ class Deal(models.Model):
 
     def __str__(self) -> str:
         return f"{self.client_company} — {self.get_phase_display()}"
+
+    def get_client_data(self) -> dict:
+        """Return client data from FK if available, otherwise from flat fields."""
+        if self.client:
+            return {
+                "company": self.client.name,
+                "contact_name": self.client.contact_name,
+                "email": self.client.email,
+                "phone": self.client.phone,
+                "ico": self.client.ico,
+            }
+        return {
+            "company": self.client_company,
+            "contact_name": self.client_contact_name,
+            "email": self.client_email,
+            "phone": self.client_phone,
+            "ico": self.client_ico,
+        }
+
+    def is_portal_token_valid(self) -> bool:
+        """Check if portal token is still valid. None expires_at = always valid (backward compat)."""
+        if self.portal_token_expires_at is None:
+            return True
+        return timezone.now() < self.portal_token_expires_at
+
+    def refresh_portal_token(self, days: int = PORTAL_TOKEN_DEFAULT_DAYS) -> None:
+        """Generate a new portal token with fresh expiration."""
+        self.portal_token = uuid.uuid4()
+        self.portal_token_expires_at = timezone.now() + timedelta(days=days)
+        self.save(update_fields=["portal_token", "portal_token_expires_at", "updated_at"])
+
+    def save(self, *args, **kwargs):
+        # Set default expiration for new deals
+        if not self.pk and self.portal_token_expires_at is None:
+            self.portal_token_expires_at = timezone.now() + timedelta(days=PORTAL_TOKEN_DEFAULT_DAYS)
+        super().save(*args, **kwargs)
 
 
 class DealActivity(models.Model):

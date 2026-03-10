@@ -1,3 +1,16 @@
+import mimetypes
+
+# Office document MIME types
+mimetypes.add_type("application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx", True)
+mimetypes.add_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx", True)
+mimetypes.add_type("application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", True)
+mimetypes.add_type("application/msword", ".doc", True)
+mimetypes.add_type("application/vnd.ms-excel", ".xls", True)
+mimetypes.add_type("application/vnd.ms-powerpoint", ".ppt", True)
+mimetypes.add_type("application/vnd.oasis.opendocument.text", ".odt", True)
+mimetypes.add_type("application/vnd.oasis.opendocument.spreadsheet", ".ods", True)
+mimetypes.add_type("application/vnd.oasis.opendocument.presentation", ".odp", True)
+
 import os
 from pathlib import Path
 
@@ -118,6 +131,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "30/minute",
         "user": "120/minute",
+        "portal_read": "30/minute",
+        "portal_write": "10/minute",
     },
 }
 
@@ -127,6 +142,14 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Workflow management system for ADNP, NekoSvan, Praut",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+}
+
+# Django Cache (reuse Redis from Celery)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+    }
 }
 
 # Celery
@@ -152,6 +175,10 @@ N8N_WEBHOOK_BASE_URL = os.environ.get("N8N_WEBHOOK_BASE_URL", "http://localhost:
 
 # Client portal
 CLIENT_PORTAL_BASE_URL = os.environ.get("CLIENT_PORTAL_BASE_URL", "http://localhost:4200/portal")
+
+# ONLYOFFICE
+ONLYOFFICE_URL = os.environ.get("ONLYOFFICE_URL", "http://localhost:9980")
+ONLYOFFICE_JWT_SECRET = os.environ.get("ONLYOFFICE_JWT_SECRET", "")
 
 # Ollama (local LLM for AI extraction)
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")

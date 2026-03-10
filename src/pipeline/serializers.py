@@ -1,21 +1,31 @@
 from rest_framework import serializers
 
-from .models import Deal, DealActivity, LeadDocument
+from .models import ClientCompany, Deal, DealActivity, LeadDocument
+
+
+class ClientCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientCompany
+        fields = ("id", "name", "contact_name", "email", "phone", "ico", "address", "notes", "created_at")
+        read_only_fields = ("id", "created_at")
 
 
 class DealSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.CharField(source="assigned_to.get_full_name", read_only=True)
     phase_display = serializers.CharField(source="get_phase_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    client_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Deal
         fields = (
             "id",
+            "client",
             "client_company",
             "client_contact_name",
             "client_email",
             "client_phone",
+            "client_data",
             "description",
             "phase",
             "phase_display",
@@ -31,6 +41,9 @@ class DealSerializer(serializers.ModelSerializer):
             "created_by",
         )
         read_only_fields = ("id", "phase", "status", "assigned_to", "revision_count", "portal_token", "created_by")
+
+    def get_client_data(self, obj):
+        return obj.get_client_data()
 
 
 class DealCreateSerializer(serializers.ModelSerializer):

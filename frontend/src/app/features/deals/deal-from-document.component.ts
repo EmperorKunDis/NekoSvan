@@ -326,7 +326,7 @@ export class DealFromDocumentComponent {
         deal?: any;
         extracted_data?: Record<string, any>;
         error?: string;
-      }>('api/v1/pipeline/lead-from-document/', formData)
+      }>('/api/v1/pipeline/lead-from-document/', formData)
       .subscribe({
         next: (res) => {
           this.processing.set(false);
@@ -340,7 +340,41 @@ export class DealFromDocumentComponent {
         error: (err) => {
           this.processing.set(false);
           this.extractedData.set(err.error?.extracted_data || null);
-          this.error.set(err.error?.error || 'Chyba při zpracování');
+          
+          // Zpracování detailních validačních chyb z DRF
+          let errorMsg = 'Chyba při zpracování';
+          
+          if (err.status === 400 && err.error) {
+            // DRF validation errors (dict of field: [messages])
+            if (typeof err.error === 'object') {
+              const errors: string[] = [];
+              
+              // Field-specific errors
+              for (const [field, messages] of Object.entries(err.error)) {
+                if (Array.isArray(messages)) {
+                  errors.push(...messages);
+                } else if (typeof messages === 'string') {
+                  errors.push(messages);
+                }
+              }
+              
+              if (errors.length > 0) {
+                errorMsg = errors.join(' ');
+              } else if (err.error.error) {
+                errorMsg = err.error.error;
+              } else if (err.error.detail) {
+                errorMsg = err.error.detail;
+              }
+            } else if (typeof err.error === 'string') {
+              errorMsg = err.error;
+            }
+          } else if (err.error?.error) {
+            errorMsg = err.error.error;
+          } else if (err.error?.detail) {
+            errorMsg = err.error.detail;
+          }
+          
+          this.error.set(errorMsg);
         },
       });
   }

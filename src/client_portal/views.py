@@ -42,7 +42,7 @@ class PortalDashboardView(APIView):
     def get(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "dashboard_view")
 
         data = {
@@ -81,12 +81,12 @@ class PortalProposalAcceptView(APIView):
     def post(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "proposal_accept")
 
         proposal = deal.proposals.filter(status="sent").order_by("-version").first()
         if not proposal:
-            return Response({"error": "No proposal to accept"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Žádná nabídka k přijetí"}, status=status.HTTP_400_BAD_REQUEST)
 
         proposal.status = "accepted"
         proposal.save(update_fields=["status", "updated_at"])
@@ -107,7 +107,7 @@ class PortalProposalRejectView(APIView):
     def post(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "proposal_reject")
 
         ser = ClientFeedbackSerializer(data=request.data)
@@ -115,7 +115,7 @@ class PortalProposalRejectView(APIView):
 
         proposal = deal.proposals.filter(status="sent").order_by("-version").first()
         if not proposal:
-            return Response({"error": "No proposal to reject"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Žádná nabídka k zamítnutí"}, status=status.HTTP_400_BAD_REQUEST)
 
         proposal.client_feedback = ser.validated_data["feedback"]
         proposal.status = "rejected"
@@ -137,7 +137,7 @@ class PortalMilestoneApproveView(APIView):
     def post(self, request, token, milestone_id):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "milestone_approve")
 
         try:
@@ -147,7 +147,7 @@ class PortalMilestoneApproveView(APIView):
                 status=Milestone.Status.CLIENT_REVIEW,
             )
         except Milestone.DoesNotExist:
-            return Response({"error": "Milestone not found or not in review"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Milestone nenalezen nebo není v revizi"}, status=status.HTTP_404_NOT_FOUND)
 
         milestone = project_services.client_approve_milestone(milestone)
         notify_milestone_approved(milestone)
@@ -163,7 +163,7 @@ class PortalMilestoneRejectView(APIView):
     def post(self, request, token, milestone_id):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "milestone_reject")
 
         ser = ClientFeedbackSerializer(data=request.data)
@@ -176,7 +176,7 @@ class PortalMilestoneRejectView(APIView):
                 status=Milestone.Status.CLIENT_REVIEW,
             )
         except Milestone.DoesNotExist:
-            return Response({"error": "Milestone not found or not in review"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Milestone nenalezen nebo není v revizi"}, status=status.HTTP_404_NOT_FOUND)
 
         milestone = project_services.client_reject_milestone(milestone, ser.validated_data["feedback"])
         return Response({"status": "rejected"})
@@ -191,16 +191,16 @@ class PortalContractDownloadView(APIView):
     def get(self, request, token):
         deal = get_deal_by_token(token)
         if not deal:
-            return Response({"error": "Invalid token"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Neplatný token"}, status=status.HTTP_404_NOT_FOUND)
         log_portal_access(deal, request, "contract_download")
 
         try:
             contract = Contract.objects.get(deal=deal)
         except Contract.DoesNotExist:
-            return Response({"error": "No contract found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Smlouva nenalezena"}, status=status.HTTP_404_NOT_FOUND)
 
         if not contract.generated_pdf:
-            return Response({"error": "PDF not yet generated"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "PDF ještě nebylo vygenerováno"}, status=status.HTTP_404_NOT_FOUND)
 
         return FileResponse(
             contract.generated_pdf.open("rb"),

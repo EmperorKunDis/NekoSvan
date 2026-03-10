@@ -4,7 +4,7 @@ from django.db import models
 class ContractTemplate(models.Model):
     name = models.CharField(max_length=200)
     body_template = models.TextField(
-        help_text="Template with placeholders: {{client_name}}, {{total_price}}, {{deposit_amount}}, etc."
+        help_text="Template with placeholders: $client_name, $total_price, $deposit_amount (or {{client_name}} syntax)"
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

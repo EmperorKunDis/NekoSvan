@@ -16,9 +16,10 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Development-only fallback (production.py requires SECRET_KEY)
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
-    "django-insecure-p&zt)o5ndfk)^qb5!42j@s8^$c+4-h8r+k8c5_p)!zb6xrp#%3",
+    "dev-only-insecure-key-change-in-production",
 )
 
 INSTALLED_APPS = [
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "drf_spectacular",
+    "axes",
     # Local apps
     "src.accounts",
     "src.pipeline",
@@ -55,6 +57,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -107,6 +110,15 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Security: Cookie settings
+# CSRF cookie must NOT be HttpOnly - JavaScript needs to read it for X-CSRFToken header
+CSRF_COOKIE_HTTPONLY = False  # Keep False for SPA CSRF protection
+CSRF_COOKIE_SECURE = True  # Only send over HTTPS in production
+CSRF_COOKIE_SAMESITE = "Lax"  # CSRF protection via SameSite
+SESSION_COOKIE_HTTPONLY = True  # Session cookie should be HttpOnly
+SESSION_COOKIE_SECURE = True  # Only send over HTTPS in production
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # DRF
 REST_FRAMEWORK = {
@@ -183,3 +195,22 @@ ONLYOFFICE_JWT_SECRET = os.environ.get("ONLYOFFICE_JWT_SECRET", "")
 # Ollama (local LLM for AI extraction)
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1")
+
+# Django Axes - Login Rate Limiting
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+AXES_FAILURE_LIMIT = 5  # Max 5 pokusů
+AXES_COOLOFF_TIME = 0.25  # 15 minut lockout (0.25 hodiny)
+AXES_LOCK_OUT_AT_FAILURE = True
+AXES_ONLY_USER_FAILURES = False  # Track by IP
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = None  # API vrací JSON error
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]  # Lockout na IP
+AXES_IPWARE_PROXY_COUNT = 1  # Support for reverse proxy (nginx)
+AXES_IPWARE_META_PRECEDENCE_ORDER = [
+    "HTTP_X_FORWARDED_FOR",
+    "HTTP_X_REAL_IP",
+    "REMOTE_ADDR",
+]

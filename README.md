@@ -41,6 +41,50 @@ docker-compose up -d
 docker-compose exec backend python manage.py migrate
 ```
 
+## 💾 Backup
+
+Automatické zálohy PostgreSQL databáze:
+
+### Manuální backup
+
+```bash
+docker-compose exec nekosvan_backend /app/scripts/backup.sh
+```
+
+### Automatické backupy (cron)
+
+Nastavte cron job na hostovacím serveru:
+
+```bash
+# Otevřít crontab
+crontab -e
+
+# Přidat řádek pro denní backup v 02:00
+0 2 * * * cd /opt/NekoSvan && docker-compose exec -T nekosvan_backend /app/scripts/backup.sh >> /var/log/nekosvan-backup.log 2>&1
+```
+
+Alternativně, backup každých 6 hodin:
+```bash
+0 */6 * * * cd /opt/NekoSvan && docker-compose exec -T nekosvan_backend /app/scripts/backup.sh >> /var/log/nekosvan-backup.log 2>&1
+```
+
+### Zálohy
+
+- Uloženy v Docker volume: `nekosvan_backups` → `/backups/`
+- Formát: `nekosvan_backup_YYYYMMDD_HHMMSS.sql.gz`
+- Automatická rotace: starší než 7 dní se mažou
+- Log: `/backups/backup.log`
+
+### Restore ze zálohy
+
+```bash
+# Najít zálohu
+docker-compose exec nekosvan_backend ls -lh /backups/
+
+# Restore
+docker-compose exec nekosvan_backend bash -c "gunzip -c /backups/nekosvan_backup_20260310_020000.sql.gz | PGPASSWORD=\$DB_PASSWORD psql -h nekosvan_db -U nekosvan -d nekosvan"
+```
+
 ## 📁 Struktura
 
 ```

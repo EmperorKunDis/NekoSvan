@@ -106,14 +106,14 @@ def extract_from_text(text: str) -> dict:
     except httpx.ConnectError:
         logger.error("Cannot connect to Ollama at %s", base_url)
         raise OllamaUnavailableError(
-            f"Cannot connect to Ollama at {base_url}. Is it running?"
+            f"Nelze se připojit k Ollama na {base_url}. Běží služba?"
         )
     except httpx.TimeoutException:
         logger.error("Ollama request timed out after %ds", OLLAMA_TIMEOUT)
-        raise OllamaUnavailableError("Ollama request timed out.")
+        raise OllamaUnavailableError("Ollama požadavek vypršel.")
     except httpx.HTTPStatusError as e:
         logger.error("Ollama returned HTTP %d", e.response.status_code)
-        raise OllamaUnavailableError(f"Ollama error: HTTP {e.response.status_code}")
+        raise OllamaUnavailableError(f"Chyba Ollama: HTTP {e.response.status_code}")
 
     raw_response = response.json().get("response", "{}")
 

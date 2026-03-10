@@ -39,6 +39,10 @@ class ContractViewSet(viewsets.ModelViewSet):
             contract = services.generate_contract_pdf(deal)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except services.ContractGenerationError as e:
+            return Response({"error": f"Contract generation failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(ContractSerializer(contract).data)
 

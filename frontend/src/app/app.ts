@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, effect } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService } from './core/services/notification.service';
@@ -16,12 +16,22 @@ export class App implements OnInit {
   constructor(
     protected auth: AuthService,
     protected notifications: NotificationService,
-  ) {}
+  ) {
+    // React to auth state changes - connect notifications when user logs in
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (user) {
+        this.notifications.loadUnreadCount();
+        this.notifications.connectSSE();
+      } else {
+        this.notifications.disconnectSSE();
+      }
+    });
+  }
 
   ngOnInit(): void {
+    // Load user session - effect will handle notifications
     this.auth.loadCurrentUser();
-    this.notifications.loadUnreadCount();
-    this.notifications.connectSSE();
   }
 
   toggleSidebar(): void {

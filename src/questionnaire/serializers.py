@@ -100,7 +100,7 @@ class QuestionnaireResponseSerializer(serializers.ModelSerializer):
                 invalid = set(values) - valid_values
                 if invalid:
                     raise serializers.ValidationError(
-                        {field_name: f"Invalid values: {', '.join(sorted(invalid))}"}
+                        {field_name: f"Neplatné hodnoty: {', '.join(sorted(invalid))}"}
                     )
         return attrs
 
@@ -112,6 +112,6 @@ class AIExtractSerializer(serializers.Serializer):
     def validate(self, attrs: dict) -> dict:
         if not attrs.get("text") and not attrs.get("file"):
             raise serializers.ValidationError(
-                "Either 'text' or 'file' must be provided."
+                "Musí být poskytnut buď 'text' nebo 'file'."
             )
         return attrs

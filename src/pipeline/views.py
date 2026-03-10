@@ -124,9 +124,9 @@ class LeadFromDocumentView(APIView):
         serializer = LeadDocumentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Vytvořit dokument
+        # Vytvořit dokument - použít validated_data
         document = LeadDocument.objects.create(
-            file=request.FILES.get("file"),
+            file=serializer.validated_data.get("file"),
             raw_text=serializer.validated_data.get("raw_text", ""),
             document_type=serializer.validated_data.get(
                 "document_type", LeadDocument.DocumentType.OTHER

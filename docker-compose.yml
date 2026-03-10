@@ -44,6 +44,7 @@ services:
     volumes:
       - nekosvan_media:/app/media
       - nekosvan_static:/app/staticfiles
+      - nekosvan_backups:/backups
     ports:
       - "127.0.0.1:13666:8000"
     healthcheck:
@@ -100,3 +101,4 @@ volumes:
   nekosvan_media:
   nekosvan_static:
   nekosvan_onlyoffice_data:
+  nekosvan_backups:

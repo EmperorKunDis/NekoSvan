@@ -75,7 +75,7 @@ def validate_transition(deal: Deal, next_phase: str) -> None:
     missing = validator(deal)
     if missing:
         raise PhaseTransitionError(
-            f"Cannot advance to {next_phase}: missing {', '.join(missing)}",
+            f"Nelze postoupit do fáze {next_phase}: chybí {', '.join(missing)}",
             phase=next_phase,
             missing=missing,
         )

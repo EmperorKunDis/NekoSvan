@@ -2,6 +2,8 @@
 
 import os
 
+import sentry_sdk
+
 from .base import *  # noqa: F401, F403
 
 DEBUG = False
@@ -11,6 +13,13 @@ if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY environment variable must be set")
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+# Sentry
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    traces_sample_rate=0.1,
+    profiles_sample_rate=0.1,
+)
 
 # Database
 DATABASES = {
@@ -25,11 +34,16 @@ DATABASES = {
 }
 
 # Security
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "SAMEORIGIN"
+X_FRAME_OPTIONS = "DENY"
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # CORS
 CORS_ALLOWED_ORIGINS = os.environ.get(

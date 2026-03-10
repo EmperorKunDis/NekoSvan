@@ -78,17 +78,49 @@ class RevisionRequestSerializer(serializers.Serializer):
 class LeadDocumentSerializer(serializers.Serializer):
     """Serializer pro vytvoření leadu z dokumentu."""
 
-    file = serializers.FileField(required=False, allow_null=True)
-    raw_text = serializers.CharField(required=False, allow_blank=True)
+    file = serializers.FileField(
+        required=False,
+        allow_null=True,
+        help_text="Soubor (TXT, PDF, DOC, DOCX, EML)",
+        error_messages={
+            "invalid": "Nahraný soubor je neplatný. Podporované formáty: TXT, PDF, DOC, DOCX, EML.",
+            "empty": "Nahraný soubor je prázdný.",
+        },
+    )
+    raw_text = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Vložený text (pokud není soubor)",
+        error_messages={
+            "invalid": "Text musí být validní řetězec.",
+        },
+    )
     document_type = serializers.ChoiceField(
         choices=LeadDocument.DocumentType.choices,
         required=False,
         default=LeadDocument.DocumentType.OTHER,
+        error_messages={
+            "invalid_choice": "Neplatný typ dokumentu. Povolené hodnoty: {choices}.",
+        },
     )
 
     def validate(self, attrs):
-        if not attrs.get("file") and not attrs.get("raw_text"):
-            raise serializers.ValidationError(
-                "Musíte nahrát soubor nebo vložit text."
-            )
+        file = attrs.get("file")
+        raw_text = attrs.get("raw_text", "").strip()
+
+        if not file and not raw_text:
+            raise serializers.ValidationError({
+                "file": "Musíte nahrát soubor nebo vložit text.",
+                "raw_text": "Musíte nahrát soubor nebo vložit text.",
+            })
+
+        # Validace formátu souboru
+        if file:
+            allowed_extensions = [".txt", ".pdf", ".doc", ".docx", ".eml"]
+            file_name = file.name.lower()
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise serializers.ValidationError({
+                    "file": f"Nepodporovaný formát souboru. Povolené: {', '.join(allowed_extensions)}"
+                })
+
         return attrs

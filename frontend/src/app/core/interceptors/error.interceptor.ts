@@ -16,11 +16,19 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error) => {
       switch (error.status) {
+        case 400:
+          // Bad Request - extract Django/DRF validation errors if available
+          const message = error.error?.detail || 'Neplatná data. Zkontrolujte formulář.';
+          toast.error(message);
+          break;
         case 401:
           router.navigate(['/login']);
           break;
         case 403:
           toast.warning('Nemáte oprávnění k této akci.');
+          break;
+        case 404:
+          toast.warning('Požadovaný zdroj nebyl nalezen.');
           break;
         case 429:
           toast.warning('Příliš mnoho požadavků. Zkuste to za chvíli.');
